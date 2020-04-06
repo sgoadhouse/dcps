@@ -3,10 +3,13 @@ Control of DC Power Supplies through python
 
 This is intended to be a generic package to control various DC power
 supplies using various access methods with a common API. For now, this
-supports only the Rigol DP832A DC Power Supply and the Aim TTi PL-P
-Series of power supplies through pyVISA and the SCPI command set. For
-the RigolDP800 class, this should work with all Rigol DP8xx power
-supplies although it is only tested with the DP832A.
+supports only the Rigol DP832A DC Power Supply, the Aim TTi PL-P
+Series of power supplies and the BK Precision 9115 DC power supply
+through pyVISA and the SCPI command set. For the RigolDP800 class,
+this should work with all Rigol DP8xx power supplies although it is
+only tested with the DP832A. Likewise, for the BK Precision supplies,
+several model numbers are similar to the 9115 and the command set is
+likely compatible.
 
 As new power supplies are added, they should each have their own sub-package.
 
@@ -39,6 +42,10 @@ pip install dcps
 
 With the use of pyvisa-py, should not have to install the National
 Instruments NIVA driver.
+
+If using the USB communications method, must also install:
+* [PyUSB 1.0.2](https://github.com/pyusb/pyusb)
+* [libusb](http://www.libusb.info/)
 
 # WARNING!
 Be *really* careful since you are controlling a power supply that may be
@@ -111,8 +118,11 @@ This implements a small subset of available commands.
 For information on what is possible for the Rigol DP8xx, see the
 [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
 
-For informatio non what is possible for the Aim TTi PL-P power
+For information on what is possible for the Aim TTi PL-P power
 supplies, see the [New PL & PL-P Series Instruction Manual](http://resources.aimtti.com/manuals/New_PL+PL-P_Series_Instruction_Manual-Iss18.pdf)
+
+For information on what is possible for the BK Precision 9115 power
+supplies, see the [Model: 9115 Multi-Range DC Power Supply PROGRAMMING MANUAL](https://bkpmedia.s3.amazonaws.com/downloads/programming_manuals/en-us/9115_series_programming_manual.pdf)
 
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the
