@@ -66,15 +66,13 @@ if __name__ == '__main__':
 
     print(bkps.idn())
 
-    # IMPORTANT: 9115 requires Remote to be set or else comands are ignored
+    # IMPORTANT: 9115 requires Remote to be set or else commands are ignored
     bkps.setRemote()
-    bkps._waitCmd()
     
     ## set Remote Lock On
     #bkps.setRemoteLock()
     
     bkps.beeperOff()
-    bkps._waitCmd()
 
     # normally would get channel from args.chan
     chan = args.chan
@@ -89,6 +87,7 @@ if __name__ == '__main__':
                          bkps.queryCurrent()))
 
     voltageSave = bkps.queryVoltage()
+    ovpSave = bkps.queryVoltageProtection()
     
     print('{:6.4f} V'.format(bkps.measureVoltage()))
     print('{:6.4f} A'.format(bkps.measureCurrent()))
@@ -104,7 +103,14 @@ if __name__ == '__main__':
     print('{:6.4f} V'.format(bkps.measureVoltage()))
     print('{:6.4f} A'.format(bkps.measureCurrent()))
 
+    print('OVP:')
+    print('A: {:6.4f} V'.format(bkps.queryVoltageProtection()))
+    bkps.setVoltageProtection(11.3, delay=0.010)
+    print('B: {:6.4f} V'.format(bkps.queryVoltageProtection()))
+    bkps.voltageProtectionOn()
+    
     bkps.setVoltage(voltageSave)
+    bkps.setVoltageProtection(ovpSave)
 
     print('{:6.4f} V'.format(bkps.measureVoltage()))
     print('{:6.4f} A'.format(bkps.measureCurrent()))

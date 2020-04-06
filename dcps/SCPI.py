@@ -404,4 +404,104 @@ class SCPI(object):
         val = self._instQuery(str)
         return float(val)
     
+    def setVoltageProtection(self, ovp, delay=None, channel=None, wait=None):
+        """Set the over-voltage protection value for the channel
+        
+           ovp     - desired over-voltage value as a floating point number
+           delay   - desired voltage protection delay time in seconds (not always supported)
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:VOLTage:PROTection:LEVel {}'.format(ovp)
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+        
+        if delay is not None:
+            str = 'SOURce:VOLTage:PROTection:DELay {}'.format(delay)
+            self._instWrite(str)
+            sleep(wait)             # give some time for PS to respond
+        
+    def queryVoltageProtection(self, channel=None):
+        """Return what the over-voltage protection set value is
+        
+        channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'SOURce:VOLTage:PROTection:LEVel?'
+        ret = self._instQuery(str)
+        return float(ret)
+    
+    def voltageProtectionOn(self, channel=None, wait=None):
+        """Enable Over-Voltage Protection on the output for channel
+        
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+                        
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:VOLTage:PROTection:STATe ON'
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+    
+    def voltageProtectionOff(self, channel=None, wait=None):
+        """Disable Over-Voltage Protection on the output for channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+                    
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:VOLTage:PROTection:STATe OFF'
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+    
 
