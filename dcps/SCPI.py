@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-# Copyright (c) 2018, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2018-2020, Stephen Goadhouse <sgoadhouse@virginia.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ from __future__ import division
 from __future__ import print_function
 
 from time import sleep
-import visa
+import pyvisa
 
 class SCPI(object):
     """Basic class for controlling and accessing a Power Supply with Standard SCPI Commands"""
@@ -65,7 +65,7 @@ class SCPI(object):
 
     def open(self):
         """Open a connection to the VISA device with PYVISA-py python library"""
-        self._rm = visa.ResourceManager('@py')
+        self._rm = pyvisa.ResourceManager('@py')
         self._inst = self._rm.open_resource(self._resource,
                                             read_termination=self._read_termination,
                                             write_termination=self._write_termination)
@@ -119,7 +119,7 @@ class SCPI(object):
         else:
             return False
         
-    def _wait(self):
+    def _waitCmd(self):
         """Wait until all preceeding commands complete"""
         #self._instWrite('*WAI')
         self._instWrite('*OPC')
@@ -177,8 +177,11 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        # @@@str = 'OUTPut:STATe? {}'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe?'.format(self.channel)
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'OUTPut:STATe?'
         ret = self._instQuery(str)
         # @@@print("1:", ret)
         return self._onORoff(ret)
@@ -194,14 +197,17 @@ class SCPI(object):
         # current channel
         if channel is not None:
             self.channel = channel
-            
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+                        
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'OUTPut:STATe {},ON'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe ON'.format(self.channel)
+        str = 'OUTPut:STATe ON'
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
@@ -216,13 +222,16 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
                     
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'OUTPut:STATe {},OFF'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe OFF'.format(self.channel)
+        str = 'OUTPut:STATe OFF'
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
@@ -237,8 +246,11 @@ class SCPI(object):
             wait = self._wait
 
         for chan in range(1,self._max_chan+1):
-            str = 'INSTrument:NSELect {}; OUTPut:STATe ON'.format(chan)
-            self._instWrite(str)
+            if (self._max_chan > 1):
+                # If multi-channel device, select next channel
+                self._instWrite('INSTrument:NSELect {}'.format(chan))
+            
+            self._instWrite('OUTPut:STATe ON')
             
         sleep(wait)             # give some time for PS to respond
     
@@ -253,8 +265,11 @@ class SCPI(object):
             wait = self._wait
 
         for chan in range(1,self._max_chan+1):
-            str = 'INSTrument:NSELect {}; OUTPut:STATe OFF'.format(chan)
-            self._instWrite(str)
+            if (self._max_chan > 1):
+                # If multi-channel device, select next channel
+                self._instWrite('INSTrument:NSELect {}'.format(chan))
+            
+            self._instWrite('OUTPut:STATe OFF')
             
         sleep(wait)             # give some time for PS to respond
     
@@ -271,13 +286,16 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'SOURce{}:VOLTage {}'.format(self._chanStr(self.channel), voltage)
-        str = 'INSTrument:NSELect {}; SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}'.format(self.channel, voltage)
+        str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}'.format(voltage)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -294,13 +312,16 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
 
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'SOURce{}:CURRent {}'.format(self._chanStr(self.channel), current)
-        str = 'INSTrument:NSELect {}; SOURce:CURRent:LEVel:IMMediate:AMPLitude {}'.format(self.channel, current)
+        str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude {}'.format(current)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
@@ -317,8 +338,11 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        # @@@str = 'SOURce{}:VOLTage?'.format(self._chanStr(self.channel))
-        str = 'INSTrument:NSELect {}; SOURce:VOLTage:LEVel:IMMediate:AMPLitude?'.format(self.channel)
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude?'
         ret = self._instQuery(str)
         return float(ret)
     
@@ -334,8 +358,11 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
                     
-        # @@@str = 'SOURce{}:CURRent?'.format(self._chanStr(self.channel))
-        str = 'INSTrument:NSELect {}; SOURce:CURRent:LEVel:IMMediate:AMPLitude?'.format(self.channel)
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude?'
         ret = self._instQuery(str)
         return float(ret)
     
@@ -350,7 +377,11 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
                     
-        str = 'INSTrument:NSELect {}; MEASure:VOLTage:DC?'.format(self.channel)
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'MEASure:VOLTage:DC?'
         val = self._instQuery(str)
         return float(val)
     
@@ -365,7 +396,11 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        str = 'INSTrument:NSELect {}; MEASure:CURRent:DC?'.format(self.channel)
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'MEASure:CURRent:DC?'
         val = self._instQuery(str)
         return float(val)
     

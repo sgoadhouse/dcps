@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-# Copyright (c) 2018, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2020, Stephen Goadhouse <sgoadhouse@virginia.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@
 # SOFTWARE.
  
 #-------------------------------------------------------------------------------
-#  Control a Rigol DP8xx family of DC Power Supplies with PyVISA
+#  Control a BK Precision 9115 and related DC Power Supplies with PyVISA
 #-------------------------------------------------------------------------------
 
 # For future Python3 compatibility:
@@ -39,70 +39,83 @@ except:
 from time import sleep
 import visa
 
-class RigolDP800(SCPI):
-    """Basic class for controlling and accessing a Rigol DP8xx Power Supply"""
+class BK9115(SCPI):
+    """Basic class for controlling and accessing a BK Precision 9115 DC Power Supply"""
 
     def __init__(self, resource, wait=1.0):
         """Init the class with the instruments resource string
 
-        resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
+        resource - resource string or VISA descriptor, like USB0::INSTR
         wait     - float that gives the default number of seconds to wait after sending each command
         """
-        super(RigolDP800, self).__init__(resource, max_chan=3, wait=wait, cmd_prefix=':')
+        super(BK9115, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix='', read_termination = None, write_termination = '\r\n')
 
     
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='Access and control a Rigol DP800 power supply')
+    parser = argparse.ArgumentParser(description='Access and control a BK Precision 9115 DC power supply')
     parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (starts at 1)', default=1)
     args = parser.parse_args()
 
     from time import sleep
     from os import environ
-    resource = environ.get('DP800_IP', 'TCPIP0::172.16.2.13::INSTR')
-    rigol = RigolDP800(resource)
-    rigol.open()
+    resource = environ.get('BK9115_USB', 'USB0::INSTR')
+    bkps = BK9115(resource)
+    bkps.open()
 
+    print(bkps.idn())
+
+    # IMPORTANT: 9115 requires Remote to be set or else comands are ignored
+    bkps.setRemote()
+    bkps._waitCmd()
+    
     ## set Remote Lock On
-    #rigol.setRemoteLock()
+    #bkps.setRemoteLock()
     
-    rigol.beeperOff()
+    bkps.beeperOff()
+    bkps._waitCmd()
+
+    # normally would get channel from args.chan
+    chan = args.chan
+    # BK Precision 9115 has a single channel, so force chan to be 1
+    chan = 1
     
-    if not rigol.isOutputOn(args.chan):
-        rigol.outputOn()
+    if not bkps.isOutputOn(chan):
+        bkps.outputOn()
         
     print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-              format(args.chan, rigol.queryVoltage(),
-                         rigol.queryCurrent()))
+              format(chan, bkps.queryVoltage(),
+                         bkps.queryCurrent()))
 
-    voltageSave = rigol.queryVoltage()
+    voltageSave = bkps.queryVoltage()
     
-    #print(rigol.idn())
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(bkps.measureVoltage()))
+    print('{:6.4f} A'.format(bkps.measureCurrent()))
 
-    rigol.setVoltage(2.7)
+    bkps.setCurrent(0.1)
+    bkps.setVoltage(2.7)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(bkps.measureVoltage()))
+    print('{:6.4f} A'.format(bkps.measureCurrent()))
 
-    rigol.setVoltage(2.3)
+    bkps.setVoltage(2.3)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(bkps.measureVoltage()))
+    print('{:6.4f} A'.format(bkps.measureCurrent()))
 
-    rigol.setVoltage(voltageSave)
+    bkps.setVoltage(voltageSave)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(bkps.measureVoltage()))
+    print('{:6.4f} A'.format(bkps.measureCurrent()))
 
     ## turn off the channel
-    rigol.outputOff()
+    bkps.outputOff()
 
-    rigol.beeperOn()
+    # The beeper sucks, do not turn it back on!
+    #@@@#bkps.beeperOn()
 
     ## return to LOCAL mode
-    rigol.setLocal()
+    bkps.setLocal()
     
-    rigol.close()
+    bkps.close()
