@@ -37,7 +37,7 @@ except:
     from SCPI import SCPI
     
 from time import sleep
-import visa
+import pyvisa as visa
 
 class BK9115(SCPI):
     """Basic class for controlling and accessing a BK Precision 9115 DC Power Supply"""

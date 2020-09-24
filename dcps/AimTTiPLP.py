@@ -37,7 +37,7 @@ except ValueError:
     from SCPI import SCPI
     
 from time import sleep
-import visa
+import pyvisa as visa
 import re
 
 class AimTTiPLP(SCPI):

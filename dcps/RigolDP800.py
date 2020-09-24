@@ -37,7 +37,7 @@ except:
     from SCPI import SCPI
     
 from time import sleep
-import visa
+import pyvisa as visa
 
 class RigolDP800(SCPI):
     """Basic class for controlling and accessing a Rigol DP8xx Power Supply"""
