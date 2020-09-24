@@ -38,10 +38,11 @@ pip install dcps
 ## Requirements
 * [python](http://www.python.org/) [Works with 2.7+ and 3+]
 * [pyvisa 1.9](https://pyvisa.readthedocs.io/en/stable/)
+   * *avoid 1.11.0 because it fails to work on Fedora/CentOS/etc.*
 * [pyvisa-py 0.2](https://pyvisa-py.readthedocs.io/en/latest/)
 
 With the use of pyvisa-py, should not have to install the National
-Instruments NIVA driver.
+Instruments NIVA VISA driver.
 
 If using the USB communications method, must also install:
 * [PyUSB 1.0.2](https://github.com/pyusb/pyusb)

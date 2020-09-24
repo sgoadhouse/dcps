@@ -15,7 +15,7 @@ except(IOError, ImportError):
 
 
 setup(name="dcps", 
-      version='0.5.3',
+      version='0.5.4',
       description='Control of DC Power Supplies through python',
       long_description_content_type='text/markdown',
       long_description=long_description,
@@ -38,7 +38,10 @@ setup(name="dcps",
         'Topic :: Software Development',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules'], 
-     install_requires=['pyvisa', 'pyvisa-py'],
+     install_requires=[
+         'pyvisa>=1.9.0,!=1.11.0',
+         'pyvisa-py>=0.2'
+     ],
      packages=["dcps"],
      include_package_data=True,
      zip_safe=False
