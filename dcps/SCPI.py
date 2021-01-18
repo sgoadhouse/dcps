@@ -82,8 +82,10 @@ class SCPI(object):
     def channel(self, value):
         if (value < 1) or (value > self._max_chan):
             raise ValueError('Invalid channel number: {}. Must be between {} and {}, inclusive.'.
-                                 format(channel, 1, self._max_chan))
+                                 format(value, 1, self._max_chan))
         self._curr_chan = value
+        self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+
 
     def _instQuery(self, queryStr):
         if (queryStr[0] != '*'):
@@ -198,7 +200,7 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
 
-        if (self._max_chan > 1 and channel is not None):
+        if (self._max_chan > 1  and channel is not None):
             # If multi-channel device and channel parameter is passed, select it
             self._instWrite('INSTrument:NSELect {}'.format(self.channel))
                         
@@ -206,7 +208,6 @@ class SCPI(object):
         # default time
         if wait is None:
             wait = self._wait
-            
         str = 'OUTPut:STATe ON'
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
@@ -222,7 +223,7 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
                     
-        if (self._max_chan > 1 and channel is not None):
+        if (self._max_chan > 1  and channel is not None):
             # If multi-channel device and channel parameter is passed, select it
             self._instWrite('INSTrument:NSELect {}'.format(self.channel))
             
@@ -504,4 +505,103 @@ class SCPI(object):
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
+    def setCurrentProtection(self, ocp, delay=None, channel=None, wait=None):
+        """Set the over-current protection value for the channel
+        
+           ocp     - desired over-current value as a floating point number
+           delay   - desired voltage protection delay time in seconds (not always supported)
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:CURRent:PROTection:LEVel {}'.format(ocp)
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+        
+        if delay is not None:
+            str = 'SOURce:CURRent:PROTection:DELay {}'.format(delay)
+            self._instWrite(str)
+            sleep(wait)             # give some time for PS to respond
+        
+    def queryCurrentProtection(self, channel=None):
+        """Return what the over-current protection set value is
+        
+        channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'SOURce:CURRent:PROTection:LEVel?'
+        ret = self._instQuery(str)
+        return float(ret)
+    
+    def currentProtectionOn(self, channel=None, wait=None):
+        """Enable Over-Current Protection on the output for channel
+        
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+                        
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:CURRent:PROTection:STATe ON'
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+    
+    def currentProtectionOff(self, channel=None, wait=None):
+        """Disable Over-Current Protection on the output for channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+                    
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:CURRent:PROTection:STATe OFF'
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
 
