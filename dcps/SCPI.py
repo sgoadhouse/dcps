@@ -296,7 +296,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}'.format(voltage)
+        str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {:.3f}'.format(voltage)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -322,7 +322,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude {}'.format(current)
+        str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude {:.4f}'.format(current)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
@@ -405,6 +405,28 @@ class SCPI(object):
         val = self._instQuery(str)
         return float(val)
     
+    
+    def measureAll(self, channel=None):
+        """Read and return a voltage, current and power measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite('INSTrument:NSELect {}'.format(self.channel))
+            
+        str = 'MEASure:ALL:DC?'
+        val = self._instQuery(str)
+        return [float(x) for x in val.split(',')]
+    
+    
+    
     def setVoltageProtection(self, ovp, delay=None, channel=None, wait=None):
         """Set the over-voltage protection value for the channel
         
@@ -428,7 +450,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        str = 'SOURce:VOLTage:PROTection:LEVel {}'.format(ovp)
+        str = 'SOURce:VOLTage:PROTection:LEVel {:.3f}'.format(ovp)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -528,7 +550,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        str = 'SOURce:CURRent:PROTection:LEVel {}'.format(ocp)
+        str = 'SOURce:CURRent:PROTection:LEVel {:.4f}'.format(ocp)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
