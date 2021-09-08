@@ -295,8 +295,11 @@ class SCPI(object):
         # default time
         if wait is None:
             wait = self._wait
-            
-        str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {:.3f}'.format(voltage)
+        
+        if voltage == 'MAX' or voltage == 'MIN':
+            str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}'.format(voltage)
+        else:
+            str = 'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {:.3f}'.format(voltage)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -322,7 +325,10 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude {:.4f}'.format(current)
+        if current == 'MAX' or current == 'MIN':
+            str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude {}'.format(current)
+        else:
+            str = 'SOURce:CURRent:LEVel:IMMediate:AMPLitude {:.4f}'.format(current)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
