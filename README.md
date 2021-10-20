@@ -42,9 +42,10 @@ pip install dcps
 
 ## Requirements
 * [python](http://www.python.org/) [Works with 2.7+ and 3+]
-* [pyvisa 1.9](https://pyvisa.readthedocs.io/en/stable/)
+   * Python 2 is now officially "end of life" so upgrade your code to Python 3
+* [pyvisa 1.9](https://pyvisa.readthedocs.io/en/1.9.0/)
    * *avoid 1.11.0 because it fails to work on Fedora/CentOS/etc.*
-* [pyvisa-py 0.5.1](https://pyvisa-py.readthedocs.io/en/latest/)
+* [pyvisa-py 0.4.1](https://github.com/pyvisa/pyvisa-py/tree/48fbf9af00f970452c4af4b32a1a84fb89ee74dc/)
 
 With the use of pyvisa-py, should not have to install the National
 Instruments NIVA VISA driver.
@@ -77,10 +78,10 @@ files, be sure to edit the resource string or VISA descriptor of your
 particular device. For many of the packages, an environment variable
 can be set and used as the VISA resource string.
 
-* for RigolDP800.py, it is `DP800\_IP`
-* for AimTTiPLP.py, it is `TTIPLP\_IP`
-* for BK 9115, it is `BK9115\_USB`
-* for Keysight E364xA, it is `E364XA\_VISA`
+* for RigolDP800.py, it is `DP800_IP`
+* for AimTTiPLP.py, it is `TTIPLP_IP`
+* for BK 9115, it is `BK9115_USB`
+* for Keysight E364xA, it is `E364XA_VISA`
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource

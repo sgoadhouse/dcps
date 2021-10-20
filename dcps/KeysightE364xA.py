@@ -82,8 +82,8 @@ class KeysightE364xA(SCPI):
         """
 
         ## regexp for resource string that indicates it is being used with KISS-488
-        respatt = re.compile("TCPIP[0-9]*::.*::SOCKET")
-        if (respatt.fullmatch(resource)):
+        respatt = re.compile("^TCPIP[0-9]*::.*::SOCKET$")
+        if (respatt.match(resource)):
             self._kiss488 = True
         else:
             self._kiss488 = False
@@ -128,7 +128,7 @@ class KeysightE364xA(SCPI):
             if (err.error_code != visa.constants.StatusCode.error_timeout):
                 # Ignore timeouts here since just reading strings until they stop.
                 # Output any other errors
-                print(f"ERROR: {err}, {type(err)}")
+                print("ERROR: {}, {}".format(err, type(err)))
 
             #@@@#self.printAllErrors()
             self.cls()
@@ -173,7 +173,7 @@ class KeysightE364xA(SCPI):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Access and control a HP/Agilent/Keysight E364xA DC Power Supply')
-    parser.add_argument('chan', nargs='?', type=int, help=f'Channel to access/control (max channel: 1)', default=1)
+    parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (max channel: 1)', default=1)
     args = parser.parse_args()
 
     from time import sleep
