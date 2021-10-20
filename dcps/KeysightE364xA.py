@@ -24,7 +24,6 @@
  
 #-----------------------------------------------------------------------------
 #  Control a HP/Agilent/Keysight E364xA series DC Power Supplies with PyVISA
-#  Assuming that a KISS-488 or equivalent Ethernet to GPIB interface is used
 #-----------------------------------------------------------------------------
 
 # For future Python3 compatibility:
@@ -37,19 +36,25 @@ try:
 except:
     from SCPI import SCPI
     
+import re
 from time import sleep
 import pyvisa as visa
 
 class KeysightE364xA(SCPI):
     """Basic class for controlling and accessing a HP/Agilent/Keysight E364xA DC Power Supply.
 
-       It is assumed that the power supply is being accessed using a KISS-488 Ethernet to GPIB 
-       adapter (https://www.ebay.com/itm/114514724752) that is properly configured to access 
-       the power supply at its GPIB address (default is 5).
+       If the VISA resource string is of the form TCPIP[n]::*::SOCKET,
+       it is assumed that the power supply is being accessed using a
+       KISS-488 Ethernet to GPIB adapter
+       (https://www.ebay.com/itm/114514724752) that is properly
+       configured to access the power supply at its GPIB address
+       (default is 5).
   
-       It should be possible to use this directly over GPIB by modifying the resource string 
-       but some minor code edits may be needed. For now, this code has only been tested with 
-       a KISS-488 Ethernet to GPIB interface.
+       It should be possible to use this directly over GPIB or with a
+       USB to GPIB interface by modifying the resource string but some
+       minor code edits may be needed. For now, this code has only
+       been tested with a KISS-488 Ethernet to GPIB interface.
+
     """
 
     ## Dictionary to translate SCPI commands for this device
@@ -69,41 +74,56 @@ class KeysightE364xA(SCPI):
         'voltageProtectionOff':      'VOLTage:PROTection:STATe OFF',
     }
 
-    def __init__(self, resource, wait=0.1, verbosity=0):
+    def __init__(self, resource, wait=0.1, verbosity=0, query_delay=1.5):
         """Init the class with the instruments resource string
 
-        resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
+        resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::23::SOCKET
         wait     - float that gives the default number of seconds to wait after sending each command
         """
+
+        ## regexp for resource string that indicates it is being used with KISS-488
+        respatt = re.compile("TCPIP[0-9]*::.*::SOCKET")
+        if (respatt.fullmatch(resource)):
+            self._kiss488 = True
+        else:
+            self._kiss488 = False
+
         super(KeysightE364xA, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix='',
                                              verbosity = verbosity,
                                              read_termination = '\n', write_termination = '\n',
-                                             timeout=3, query_delay=2) # for open_resource()
+                                             timeout=3, query_delay=query_delay) # for open_resource()
     
     def _instQuery(self, queryStr):
-        """ KISS-488 requires queries to end in '\r' so it knows a response is expected """
-        # Overload _instQuery from SCPI.py so can append the \r
+        """ Overload _instQuery from SCPI.py so can append the \r if KISS-488 """
         # Need to also strip out any leading or trailing white space from the response
-        return super(KeysightE364xA, self)._instQuery(queryStr+'\r').strip()
+
+        # KISS-488 requires queries to end in '\r' so it knows a response is expected
+        if (self._kiss488):
+            queryStr += '\r'
+            
+        return super(KeysightE364xA, self)._instQuery(queryStr).strip()
         
     def open(self):
         """ Overloaded open() so can read out the extra two lines after opening the connection """
 
         super(KeysightE364xA, self).open()
 
+        # Give the instrument time to output whatever initial output it may send
         sleep(0.5)
 
         ## Can clear strings instead of reading and printing them out
         #@@@#self._inst.clear()
 
-        # The initial header from KISS-488 should be 2 lines - just read them and print to screen
+        # Read out any strings that are sent after connecting (happens
+        # for KISS-488 and may happen with other interfaces)
         try:
             while True:
                 bytes = self._inst.read_raw()
-                # If the expected header from KISS-488, print it out, otherwise ignore.
-                # Need to do this because Keysight E3642A prints out a garbage string after connecting to it
-                if ('KISS-488'.encode() in bytes):
-                    print(bytes.decode('utf-8').strip())
+                if (self._kiss488):
+                    # If the expected header from KISS-488, print it out, otherwise ignore.
+                    # Need to do this because Keysight E3642A prints out a garbage string after connecting to it
+                    if ('KISS-488'.encode() in bytes):
+                        print(bytes.decode('utf-8').strip())
         except visa.errors.VisaIOError as err:
             if (err.error_code != visa.constants.StatusCode.error_timeout):
                 # Ignore timeouts here since just reading strings until they stop.
@@ -215,11 +235,17 @@ if __name__ == '__main__':
     else:
         print("OVP is not TRIPPED but is SHOULD be - FAILURE\n")
 
-    print("Changing Output Voltage to 3.58V and clearing OVP Trip")
-    dcpwr.setVoltage(3.58)
+    print("Changing Output Voltage to 3.55V and clearing OVP Trip")
+    dcpwr.setVoltage(3.55)
     dcpwr.voltageProtectionClear()
     print('{:6.4f}V / {:6.4f}A (limit: {:6.4f}A)\n'.format(dcpwr.measureVoltage(), dcpwr.measureCurrent(), dcpwr.queryCurrent()))
-        
+
+    if (dcpwr.isVoltageProtectionTripped()):
+        print("OVP is still TRIPPED - FAILURE\n")
+    else:
+        print("OVP is not TRIPPED as is expected\n")
+
+    
     print("Restoring original Output Voltage setting")
     dcpwr.setVoltage(voltageSave)
     print('{:6.4f}V / {:6.4f}A (limit: {:6.4f}A)\n'.format(dcpwr.measureVoltage(), dcpwr.measureCurrent(), dcpwr.queryCurrent()))
