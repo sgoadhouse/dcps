@@ -2,16 +2,19 @@
 Control of DC Power Supplies through python
 
 This is intended to be a generic package to control various DC power
-supplies using various access methods with a common API. For now, this
-supports only the Rigol DP832A DC Power Supply, the Aim TTi PL-P
-Series of power supplies, the BK Precision 9115 DC power supply and
-the Agilent/Keysight E364xA series DC power supply through pyVISA and
-the SCPI command set. For the RigolDP800 class, this should work with
-all Rigol DP8xx power supplies although it is only tested with the
-DP832A. Likewise, for the BK Precision supplies, several model numbers
-are similar to the 9115 and the command set is likely compatible. For
-The Keysight E364xA, it should work with the entire series but only
-tested on the E3642A.
+supplies using various access methods with a common API. It utilizes
+pyVISA and the SCPI command set. For now, this supports only the
+following DC power supplies:
+
+* Rigol DP800 series *(tested with DP832A)*
+* Aim TTi PL-P series
+* BK Precision 9115 series *(tested with 9115)*
+* Agilent/Keysight E364xA series  *(tested with E3642A)*
+
+These DC power supplies are each part of a series of products. All
+products within the series that use a common programming language
+should be supported but only the indicated models were used for
+development and testing.
 
 As new power supplies are added, they should each have their own sub-package.
 
@@ -71,11 +74,13 @@ unexpectedly go to unexpected values.
 
 If running the examples embedded in the individual package source
 files, be sure to edit the resource string or VISA descriptor of your
-particular device. For RigolDP800.py, you can also set an environment
-variable, DP800\_IP to the desired resource string before running the
-code. For AimTTiPLP.py, there is a similar environment variable,
-TTIPLP\_IP. For Keysight E364xA, there is a similar environment
-variable, E364XA\_VISA.
+particular device. For many of the packages, an environment variable
+can be set and used as the VISA resource string.
+
+* for RigolDP800.py, it is `DP800\_IP`
+* for AimTTiPLP.py, it is `TTIPLP\_IP`
+* for BK 9115, it is `BK9115\_USB`
+* for Keysight E364xA, it is `E364XA\_VISA`
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource
