@@ -15,7 +15,7 @@ except(IOError, ImportError):
 
 
 setup(name="dcps", 
-      version='0.5.4',
+      version='0.5.5',
       description='Control of DC Power Supplies through python',
       long_description_content_type='text/markdown',
       long_description=long_description,
@@ -25,7 +25,7 @@ setup(name="dcps",
       maintainer='Stephen Goadhouse',
       maintainer_email="sgoadhouse@virginia.edu",
       license='MIT',
-      keywords=['Rigol', 'DP800', 'DP832A', 'AimTTI', 'BK', '9115', 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
+      keywords=['Rigol', 'DP800', 'DP832A', 'AimTTI', 'BK', '9115', 'Keysight', 'Agilent', 'E3642A', 'E364xA', 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -40,7 +40,7 @@ setup(name="dcps",
         'Topic :: Software Development :: Libraries :: Python Modules'], 
      install_requires=[
          'pyvisa>=1.9.0,!=1.11.0',
-         'pyvisa-py>=0.2'
+         'pyvisa-py>=0.5.1'
      ],
      packages=["dcps"],
      include_package_data=True,

@@ -10,3 +10,7 @@ from dcps.AimTTiPLP import AimTTiPLP
 
 # Support of BK Precision 9115 and related DC power supplies
 from dcps.BK9115 import BK9115
+
+# Support of HP/Agilent/Keysight E364xA series DC Power Supplies
+# connected to GPIB port through a KISS-488 Ethernet to GPIB interface
+from dcps.KeysightE364xA import KeysightE364xA

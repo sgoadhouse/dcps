@@ -4,12 +4,14 @@ Control of DC Power Supplies through python
 This is intended to be a generic package to control various DC power
 supplies using various access methods with a common API. For now, this
 supports only the Rigol DP832A DC Power Supply, the Aim TTi PL-P
-Series of power supplies and the BK Precision 9115 DC power supply
-through pyVISA and the SCPI command set. For the RigolDP800 class,
-this should work with all Rigol DP8xx power supplies although it is
-only tested with the DP832A. Likewise, for the BK Precision supplies,
-several model numbers are similar to the 9115 and the command set is
-likely compatible.
+Series of power supplies, the BK Precision 9115 DC power supply and
+the Agilent/Keysight E364xA series DC power supply through pyVISA and
+the SCPI command set. For the RigolDP800 class, this should work with
+all Rigol DP8xx power supplies although it is only tested with the
+DP832A. Likewise, for the BK Precision supplies, several model numbers
+are similar to the 9115 and the command set is likely compatible. For
+The Keysight E364xA, it should work with the entire series but only
+tested on the E3642A.
 
 As new power supplies are added, they should each have their own sub-package.
 
@@ -39,7 +41,7 @@ pip install dcps
 * [python](http://www.python.org/) [Works with 2.7+ and 3+]
 * [pyvisa 1.9](https://pyvisa.readthedocs.io/en/stable/)
    * *avoid 1.11.0 because it fails to work on Fedora/CentOS/etc.*
-* [pyvisa-py 0.2](https://pyvisa-py.readthedocs.io/en/latest/)
+* [pyvisa-py 0.5.1](https://pyvisa-py.readthedocs.io/en/latest/)
 
 With the use of pyvisa-py, should not have to install the National
 Instruments NIVA VISA driver.
@@ -72,7 +74,8 @@ files, be sure to edit the resource string or VISA descriptor of your
 particular device. For RigolDP800.py, you can also set an environment
 variable, DP800\_IP to the desired resource string before running the
 code. For AimTTiPLP.py, there is a similar environment variable,
-TTIPLP\_IP.
+TTIPLP\_IP. For Keysight E364xA, there is a similar environment
+variable, E364XA\_VISA.
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource
@@ -124,6 +127,9 @@ supplies, see the [New PL & PL-P Series Instruction Manual](http://resources.aim
 
 For information on what is possible for the BK Precision 9115 power
 supplies, see the [Model: 9115 Multi-Range DC Power Supply PROGRAMMING MANUAL](https://bkpmedia.s3.amazonaws.com/downloads/programming_manuals/en-us/9115_series_programming_manual.pdf)
+
+For information on what is possible for the Agilent/Keysight E364xA power
+supplies, see the [Model: Keysight E364xA Single Output DC Power Supplies](https://www.keysight.com/us/en/assets/9018-01165/user-manuals/9018-01165.pdf?success=true)
 
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the
