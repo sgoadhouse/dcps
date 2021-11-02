@@ -12,5 +12,9 @@ from dcps.AimTTiPLP import AimTTiPLP
 from dcps.BK9115 import BK9115
 
 # Support of HP/Agilent/Keysight E364xA series DC Power Supplies
-# connected to GPIB port through a KISS-488 Ethernet to GPIB interface
+# connected to GPIB port through a KISS-488 Ethernet or Prologix Ethernet to GPIB interface
 from dcps.KeysightE364xA import KeysightE364xA
+
+# Support of Keithley/Tektronix 622X Precision Current Source
+# connected to GPIB port through a KISS-488 or Prologix Ethernet to GPIB interface
+from dcps.Keithley622x import Keithley622x
