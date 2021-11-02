@@ -66,7 +66,10 @@ class SCPI(object):
         'isVoltageProtectionTripped':'VOLTage:PROTection:TRIPped?',
         'voltageProtectionClear':    'VOLTage:PROTection:CLEar',
     }
-    
+
+    # Official SCPI numeric value for Not A Number
+    NaN = 9.91E37
+
     def __init__(self,
                  resource, max_chan=1, wait=1.0,
                  cmd_prefix = '',
@@ -105,6 +108,14 @@ class SCPI(object):
     def open(self):
         """Open a connection to the VISA device with PYVISA-py python library"""
         self._rm = pyvisa.ResourceManager('@py')
+
+        if (self._verbosity >= 1):
+            print('PyVISA Resources Found:')
+            print("   " + "\n   ".join(self._rm.list_resources()))
+
+        if (self._verbosity >= 1):
+            print('opening resource: ' + self._resource)
+            
         self._inst = self._rm.open_resource(self._resource,
                                             read_termination=self._read_termination,
                                             write_termination=self._write_termination,                                            
@@ -130,7 +141,10 @@ class SCPI(object):
             queryStr = self._prefix + queryStr
         if self._verbosity >= 3:
             print("QUERY:",queryStr)
-        return self._inst.query(queryStr)
+        resp = self._inst.query(queryStr)
+        if self._verbosity >= 3:
+            print("   QUERY Response:", resp)
+        return resp
         
     def _instWrite(self, writeStr):
         if (writeStr[0] != '*'):
@@ -277,7 +291,7 @@ class SCPI(object):
         str = self._Cmd('isOutput')
         ret = self._instQuery(str)
         # @@@print("1:", ret)
-        return self._onORoff(ret)
+        return self._onORoff_1OR0_yesORno(ret)
     
     def outputOn(self, channel=None, wait=None):
         """Turn on the output for channel
