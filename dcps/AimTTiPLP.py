@@ -51,11 +51,13 @@ class AimTTiPLP(SCPI):
     only minimally adhere to the command standards.
     """
 
-    def __init__(self, resource, wait=1.0):
+    def __init__(self, resource, wait=1.0, verbosity=0, **kwargs):
         """Init the class with the instruments resource string
 
-        resource - resource string or VISA descriptor, like TCPIP0::192.168.1.100::9221::SOCKET 
-        wait     - float that gives the default number of seconds to wait after sending each command
+        resource  - resource string or VISA descriptor, like TCPIP0::192.168.1.100::9221::SOCKET 
+        wait      - float that gives the default number of seconds to wait after sending each command
+        verbosity - verbosity output - set to 0 for no debug output
+        kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
 
         NOTE: According to the documentation for this power supply, the
         resource string when using the Ethernet access method must look
@@ -66,8 +68,10 @@ class AimTTiPLP(SCPI):
         """
         super(AimTTiPLP, self).__init__(resource, max_chan=3, wait=wait,
                                         cmd_prefix='',
+                                        verbosity=verbosity,
                                         read_termination='\n',
-                                        write_termination='\r\n')
+                                        write_termination='\r\n',
+                                        **kwargs)
 
     def setLocal(self):
         """Set the power supply to LOCAL mode where front panel keys work again

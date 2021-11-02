@@ -42,13 +42,15 @@ import pyvisa as visa
 class BK9115(SCPI):
     """Basic class for controlling and accessing a BK Precision 9115 DC Power Supply"""
 
-    def __init__(self, resource, wait=1.0):
+    def __init__(self, resource, wait=1.0, verbosity=0, **kwargs):
         """Init the class with the instruments resource string
 
-        resource - resource string or VISA descriptor, like USB0::INSTR
-        wait     - float that gives the default number of seconds to wait after sending each command
+        resource  - resource string or VISA descriptor, like USB0::INSTR
+        wait      - float that gives the default number of seconds to wait after sending each command
+        verbosity - verbosity output - set to 0 for no debug output
+        kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
         """
-        super(BK9115, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix='', read_termination = None, write_termination = '\r\n')
+        super(BK9115, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix='', verbosity=verbosity, read_termination = None, write_termination = '\r\n', **kwargs)
 
     
 

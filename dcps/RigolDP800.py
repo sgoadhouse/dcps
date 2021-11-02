@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-# Copyright (c) 2018, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2018, 2021, Stephen Goadhouse <sgoadhouse@virginia.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -42,13 +42,15 @@ import pyvisa as visa
 class RigolDP800(SCPI):
     """Basic class for controlling and accessing a Rigol DP8xx Power Supply"""
 
-    def __init__(self, resource, wait=1.0):
+    def __init__(self, resource, wait=1.0, verbosity=0, **kwargs):
         """Init the class with the instruments resource string
 
         resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
         wait     - float that gives the default number of seconds to wait after sending each command
+        verbosity - verbosity output - set to 0 for no debug output
+        kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
         """
-        super(RigolDP800, self).__init__(resource, max_chan=3, wait=wait, cmd_prefix=':')
+        super(RigolDP800, self).__init__(resource, max_chan=3, wait=wait, cmd_prefix=':', verbosity = verbosity, **kwargs)
 
     
 
