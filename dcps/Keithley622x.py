@@ -64,6 +64,11 @@ class Keithley622x(SCPI):
        minor code edits may be needed. For now, this code has only
        been tested with a KISS-488 or Prologix Ethernet to GPIB interface.
 
+       Currently, could not get the KISS-488 interface to fully
+       support the Keithley 622x although it works with other
+       devices. So recommend to only attempt to use the Prologix with
+       the 622x.
+
     """
 
     ## Dictionary to translate SCPI commands for this device
