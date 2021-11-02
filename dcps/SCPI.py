@@ -232,14 +232,37 @@ class SCPI(object):
                 # all errors have been read so return
                 break
         
-    def cls(self):
-        """Clear Status and sometimes errors"""
+    def cls(self, wait=None):
+        """Clear Status and sometimes errors
+
+           wait    - number of seconds to wait after sending command
+        """
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
         self._instWrite('*CLS')
 
-    def rst(self):
-        """Reset but not errors"""
+        sleep(wait)             # give some time for device to respond
+        
+    def rst(self, wait=None):
+        """Reset but not errors
+
+           wait    - number of seconds to wait after sending command
+        """
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
         self._instWrite('*RST')
 
+        sleep(wait)             # give some time for device to respond
+        
+        
     def setLocal(self):
         """Set the power supply to LOCAL mode where front panel keys work again
         """
