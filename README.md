@@ -76,9 +76,9 @@ lab environment, An Ethernet to GPIB or USB to GPIB interface can be
 used. The only such interfaces that have been tested so far are:
 
 * [Prologix Ethernet to GPIB adapter](http://prologix.biz/gpib-ethernet-controller.html)
-  ![Prologix Ethernet to GPIB adapter](http://prologix.biz/images/detailed/0/GPIB-Ethernet-front.jpg)
+  <img src="http://prologix.biz/images/detailed/0/GPIB-Ethernet-front.jpg" width="200">
 * [KISS-488 Ethernet to GPIB adapter](https://www.ebay.com/itm/114514724752)
-  ![KISS-488 Ethernet to GPIB adapter](https://i.ebayimg.com/images/g/tegAAOSwLcNclY1g/s-l64.jpg)
+  <img src="https://i.ebayimg.com/images/g/tegAAOSwLcNclY1g/s-l500.jpg" width="200">
 
 For the Agilent/Keysight E364xA, both the Prologix and KISS-488 have
 been tested and work. For the Keithley 622x and 2182, only the
