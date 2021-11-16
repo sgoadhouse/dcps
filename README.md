@@ -1,7 +1,5 @@
 # dcps
 
-[[_TOC_]]
-
 Control of DC Power Supplies through python
 
 This is intended to be a generic package to control various DC power
@@ -77,9 +75,9 @@ have no Ethernet or USB interface. To make them easier to access in a
 lab environment, An Ethernet to GPIB or USB to GPIB interface can be
 used. The only such interfaces that have been tested so far are:
 
-* [Prologix Ethernet to GPIB adapter] (http://prologix.biz/gpib-ethernet-controller.html)
-  ![Prologix Ethernet to GPIB adapter] (http://prologix.biz/images/detailed/0/GPIB-Ethernet-front.jpg)
-* [KISS-488 Ethernet to GPIB adapter] (https://www.ebay.com/itm/114514724752)
+* [Prologix Ethernet to GPIB adapter](http://prologix.biz/gpib-ethernet-controller.html)
+  ![Prologix Ethernet to GPIB adapter](http://prologix.biz/images/detailed/0/GPIB-Ethernet-front.jpg)
+* [KISS-488 Ethernet to GPIB adapter](https://www.ebay.com/itm/114514724752)
   ![KISS-488 Ethernet to GPIB adapter](https://i.ebayimg.com/images/g/tegAAOSwLcNclY1g/s-l64.jpg)
 
 For the Agilent/Keysight E364xA, both the Prologix and KISS-488 have
