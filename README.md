@@ -1,4 +1,7 @@
 # dcps
+
+[[_TOC_]]
+
 Control of DC Power Supplies through python
 
 This is intended to be a generic package to control various DC power
@@ -17,6 +20,19 @@ should be supported but only the indicated models were used for
 development and testing.
 
 As new power supplies are added, they should each have their own sub-package.
+
+In addition to the above traditional power supplies, a few other
+instruments have been added that have a similar control paradigm such
+as current sources, volt meters and, perhaps in the future, source
+meters that can both source and measure voltages and currents. These
+all can either source a voltage or current and/or measure a voltage or
+current. They stub off unused functions so that common scripts can
+still be created with a common interface and they retain the ability
+to target any of these instruments. These alternative instruments that
+are supported are:
+
+* Keithley/Tektronix 622x series Precision Current Source  *(tested with 6220)*
+* Keithley/Tektronix 2182/2182A Nanovoltmeter  *(tested with 2182A)*
 
 
 # Installation
@@ -54,20 +70,36 @@ If using the USB communications method, must also install:
 * [PyUSB 1.0.2](https://github.com/pyusb/pyusb)
 * [libusb](http://www.libusb.info/)
 
-# WARNING!
-Be *really* careful since you are controlling a power supply that may be
-connected to something that does not like to go to 33V when you
-meant 3.3V and it may express its displeasure by exploding all over
-the place. So be sure to do ALL testing without a device connected,
-as much as possible, and make use of the protections built into the
-power supply. For example, you can set voltage and current limits that
-the power supply will obey and ignore requests by these commands to go
-outside the allowable ranges. There are even SCPI commands to set
-these limits, but they are not in this class because I think it is
-safer that they be set manually. Of course, you can easily add those
-commands and do it programatically if you like living dangerously.
+## Ethernet to GPIB Interface
 
-## Usage
+Several of these devices, such as the Agilent and Keithley models,
+have no Ethernet or USB interface. To make them easier to access in a
+lab environment, An Ethernet to GPIB or USB to GPIB interface can be
+used. The only such interfaces that have been tested so far are:
+
+* [Prologix Ethernet to GPIB adapter] (http://prologix.biz/gpib-ethernet-controller.html)
+  ![Prologix Ethernet to GPIB adapter] (http://prologix.biz/images/detailed/0/GPIB-Ethernet-front.jpg)
+* [KISS-488 Ethernet to GPIB adapter] (https://www.ebay.com/itm/114514724752)
+  ![KISS-488 Ethernet to GPIB adapter](https://i.ebayimg.com/images/g/tegAAOSwLcNclY1g/s-l64.jpg)
+
+For the Agilent/Keysight E364xA, both the Prologix and KISS-488 have
+been tested and work. For the Keithley 622x and 2182, only the
+Prologix interface works. If a `TCPIP0` resource string is used for
+these models, the code automatically determines which device is
+used. See the code comments for these models to learn more.
+
+# WARNING!
+Be *really* careful since you are controlling a power supply that may
+be connected to something that does not like to go to 33V when you
+meant 3.3V and it may express its displeasure by exploding all over
+the place. So be sure to do ALL testing without a device connected, as
+much as possible, and make use of the protections built into the power
+supply. For example, you can often set voltage and current limits that
+the power supply will obey and ignore requests by these commands to go
+outside these allowable ranges. There are even SCPI commands to set
+these limits, although it may be safer that they be set manually. 
+
+# Usage
 The code is a very basic class for controlling and accessing the
 supported power supplies. Before running any example, be extra sure
 that the power supply is disconnected from any device in case voltsges
@@ -82,6 +114,8 @@ can be set and used as the VISA resource string.
 * for AimTTiPLP.py, it is `TTIPLP_IP`
 * for BK 9115, it is `BK9115_USB`
 * for Keysight E364xA, it is `E364XA_VISA`
+* for Keithley 622x, it is `K622X_VISA`
+* for Keithley 2182, it is `K2182_VISA`
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource
@@ -137,12 +171,18 @@ supplies, see the [Model: 9115 Multi-Range DC Power Supply PROGRAMMING MANUAL](h
 For information on what is possible for the Agilent/Keysight E364xA power
 supplies, see the [Model: Keysight E364xA Single Output DC Power Supplies](https://www.keysight.com/us/en/assets/9018-01165/user-manuals/9018-01165.pdf?success=true)
 
+For information on what is possible for the Keithley/Tektronix 622x series Precision Current Source
+supplies, see the [Model 6220 DC Current Source Model 6221 AC and DC Current Source User's Manual](https://www.tek.com/product-series/ultra-sensitive-current-sources-series-6200-manual/model-6220-dc-current-source-model)
+
+For information on what is possible for the Keithley/Tektronix 2182/2182A Nanovoltmeter
+supplies, see the [Models 2182 and 2182A Nanovoltmeter User's Manual ](https://www.tek.com/keithley-low-level-sensitive-and-specialty-instruments/keithley-nanovoltmeter-model-2182a-manual/models-2182-and-2182a-nanovoltmeter-users-manual)
+
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the
 [SCPI 1999 Specification](http://www.ivifoundation.org/docs/scpi-99.pdf)
 and the
 [SCPI Wikipedia](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) entry.
 
-## Contact
+# Contact
 Please send bug reports or feedback to Stephen Goadhouse
 
