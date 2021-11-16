@@ -18,3 +18,7 @@ from dcps.KeysightE364xA import KeysightE364xA
 # Support of Keithley/Tektronix 622X Precision Current Source
 # connected to GPIB port through a KISS-488 or Prologix Ethernet to GPIB interface
 from dcps.Keithley622x import Keithley622x
+
+# Support of Keithley/Tektronix 2182 Nanovoltmeter
+# connected to GPIB port through a KISS-488 or Prologix Ethernet to GPIB interface
+from dcps.Keithley2182 import Keithley2182
