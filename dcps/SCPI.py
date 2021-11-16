@@ -137,7 +137,9 @@ class SCPI(object):
         self._curr_chan = value
 
     def _instQuery(self, queryStr):
-        if (queryStr[0] != '*'):
+        if (queryStr[0] != '*' and queryStr[0:2] != '++'):
+            # '*' start SCPI common commands and never have a prefix
+            # '++' is used by Prologix Ethernet GPIB interface and should not have prefix prepended either
             queryStr = self._prefix + queryStr
         if self._verbosity >= 3:
             print("QUERY:",queryStr)
@@ -147,7 +149,9 @@ class SCPI(object):
         return resp
         
     def _instWrite(self, writeStr):
-        if (writeStr[0] != '*'):
+        if (writeStr[0] != '*' and writeStr[0:2] != '++'):
+            # '*' start SCPI common commands and never have a prefix
+            # '++' is used by Prologix Ethernet GPIB interface and should not have prefix prepended either
             writeStr = self._prefix + writeStr
         if self._verbosity >= 3:
             print("WRITE:",writeStr)
@@ -175,6 +179,16 @@ class SCPI(object):
         else:
             return False
         
+    def _bool2onORoff(self, bool):
+        """If bool is True, return ON string, else return OFF string. Use to
+        convert boolean input to ON or OFF string output.
+        """
+
+        if (bool):
+            return 'ON'
+        else:
+            return 'OFF'
+
     def _onORoff_1OR0_yesORno(self, str):
         """Check if string says it is ON or OFF and return True if ON
         and False if OFF OR check if '1' or '0' and return True for '1' 
@@ -225,7 +239,10 @@ class SCPI(object):
         """Repeatedly read and print out errors until reach the +0,'No error' message"""
         while True:
             err = self.readError()
-            if (err[0:3] != '+0,'):
+            if (err[0:3] != '+0,' and err[0:2] != '0,'):
+                ## No Error has two possible results across platforms:
+                ## '+0,"No error"' or '0,"No error"' Handle either.
+                ##
                 #@@@#print(":".join("{:02x}".format(ord(c)) for c in err[0:3]))
                 print(err)
             else:
