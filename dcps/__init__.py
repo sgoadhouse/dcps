@@ -22,3 +22,7 @@ from dcps.Keithley622x import Keithley622x
 # Support of Keithley/Tektronix 2182 Nanovoltmeter
 # connected to GPIB port through a KISS-488 or Prologix Ethernet to GPIB interface
 from dcps.Keithley2182 import Keithley2182
+
+# Support of Keithley/Tektronix 2400 Series SourceMeter
+# connected to GPIB port through a KISS-488 or Prologix Ethernet to GPIB interface
+from dcps.Keithley2400 import Keithley2400
