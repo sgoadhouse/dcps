@@ -79,8 +79,8 @@ class SCPI(object):
         'queryVoltageProtection':        'SOURce:VOLTage:PROTection:LEVel?',
         'voltageProtectionOn':           'SOURce:VOLTage:PROTection:STATe ON',
         'voltageProtectionOff':          'SOURce:VOLTage:PROTection:STATe OFF',
-        'isVoltageProtectionTripped':    'VOLTage:PROTection:TRIPped?',
-        'voltageProtectionClear':        'VOLTage:PROTection:CLEar',
+        'isVoltageProtectionTripped':    'SOURce:VOLTage:PROTection:TRIPped?',
+        'voltageProtectionClear':        'SOURce:VOLTage:PROTection:CLEar',
         'setVoltageCompliance':          'SENSe:VOLTage:PROTection:LEVel {}',
         'queryVoltageCompliance':        'SENSe:VOLTage:PROTection:LEVel?',
         'setCurrentCompliance':          'SENSe:CURRent:PROTection:LEVel {}',
@@ -496,7 +496,7 @@ class SCPI(object):
             # Disable AUTO range and set the range to value
             str = cmdAuto.format(self.channel, 'OFF')
             self._instWrite(str)
-            str = cmdRange.format(self.channel, float(upper))
+            str = cmdRange.format(self.channel, float(value))
             self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -544,13 +544,13 @@ class SCPI(object):
            wait     - number of seconds to wait after sending command
         """
 
-        self.setGenericRange(value, self._Cmd('setCurrentRangeAuto'), self._Cmd('setCurrentRange'), channel, wait)
+        self.setGenericRange(upper, self._Cmd('setCurrentRangeAuto'), self._Cmd('setCurrentRange'), channel, wait)
                 
-    def queryVoltage(self, channel=None):
-        """Return what voltage set value is (not the measured voltage,
-        but the set voltage)
+    def fetchGenericValue(self, qryValue, channel=None):
+        """Perform a SCPI Query using qryValue command
         
-        channel - number of the channel starting at 1
+        qryValue - SCPI query command string to use to query the VALUE
+        channel  - number of the channel starting at 1
         """
 
         # If a channel number is passed in, make it the
@@ -562,9 +562,17 @@ class SCPI(object):
             # If multi-channel device and channel parameter is passed, select it
             self._instWrite(self._Cmd('chanSelect').format(self.channel))
             
-        str = self._Cmd('queryVoltage')
-        ret = self._instQuery(str)
+        ret = self._instQuery(qryValue)
         return float(ret)
+    
+    def queryVoltage(self, channel=None):
+        """Return what voltage set value is (not the measured voltage,
+        but the set voltage)
+        
+        channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('queryVoltage'))
     
     def queryGenericRange(self, cmdAuto, cmdRange, channel=None):
         """Query the generic range for channel
@@ -602,7 +610,7 @@ class SCPI(object):
 
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG:AUTO?'.format(self.channel)
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG?'.format(self.channel)
-        return self.queryGenericRange(self._Cmd('queryVoltageRangeAuto'), self._Cmd('queryVoltageRange'), channel=None):
+        return self.queryGenericRange(self._Cmd('queryVoltageRangeAuto'), self._Cmd('queryVoltageRange'), channel=None)
         
             
     def queryCurrent(self, channel=None):
@@ -612,18 +620,8 @@ class SCPI(object):
         channel - number of the channel starting at 1
         """
 
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-                    
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-            
-        str = self._Cmd('queryCurrent')
-        ret = self._instQuery(str)
-        return float(ret)
+        return self.fetchGenericValue(self._Cmd('queryCurrent'))
+    
     
     def queryCurrentRange(self, channel=None):
         """Query the current range for channel
@@ -631,7 +629,7 @@ class SCPI(object):
            channel  - number of the channel starting at 1
         """
 
-        return self.queryGenericRange(self._Cmd('queryCurrentRangeAuto'), self._Cmd('queryCurrentRange'), channel=None):
+        return self.queryGenericRange(self._Cmd('queryCurrentRangeAuto'), self._Cmd('queryCurrentRange'), channel=None)
             
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
@@ -639,18 +637,7 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-                    
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-            
-        str = self._Cmd('measureVoltage')
-        val = self._instQuery(str)
-        return float(val)
+        return self.fetchGenericValue(self._Cmd('measureVoltage'))
     
     def setMeasureVoltageRange(self, upper, channel=None, wait=None):
         """Set the measurement voltage range for channel
@@ -660,7 +647,7 @@ class SCPI(object):
            wait     - number of seconds to wait after sending command
         """
 
-        self.setGenericRange(value, self._Cmd('setMeasureVoltageRangeAuto'), self._Cmd('setMeasureVoltageRange'), channel, wait)
+        self.setGenericRange(upper, self._Cmd('setMeasureVoltageRangeAuto'), self._Cmd('setMeasureVoltageRange'), channel, wait)
             #@@@#str = 'SENS:VOLT:CHAN{:1d}:RANG:AUTO {}'.format(self.channel, 'ON')
             #@@@#str = 'SENS:VOLT:CHAN{:1d}:RANG {:.3e}'.format(self.channel,float(upper))
     
@@ -672,7 +659,7 @@ class SCPI(object):
 
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG:AUTO?'.format(self.channel)
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG?'.format(self.channel)
-        return self.queryGenericRange(self._Cmd('queryMeasureVoltageRangeAuto'), self._Cmd('queryMeasureVoltageRange'), channel=None):
+        return self.queryGenericRange(self._Cmd('queryMeasureVoltageRangeAuto'), self._Cmd('queryMeasureVoltageRange'), channel=None)
             
     def measureCurrent(self, channel=None):
         """Read and return a current measurement from channel
@@ -680,18 +667,7 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-            
-        str = self._Cmd('measureCurrent')
-        val = self._instQuery(str)
-        return float(val)
+        return self.fetchGenericValue(self._Cmd('measureCurrent'))
     
     def setMeasureCurrentRange(self, upper, channel=None, wait=None):
         """Set the measurement current range for channel
@@ -701,7 +677,7 @@ class SCPI(object):
            wait     - number of seconds to wait after sending command
         """
 
-        self.setGenericRange(value, self._Cmd('setMeasureCurrentRangeAuto'), self._Cmd('setMeasureCurrentRange'), channel, wait)
+        self.setGenericRange(upper, self._Cmd('setMeasureCurrentRangeAuto'), self._Cmd('setMeasureCurrentRange'), channel, wait)
     
     def queryMeasureCurrentRange(self, channel=None):
         """Query the measurement current range for channel
@@ -709,7 +685,7 @@ class SCPI(object):
            channel  - number of the channel starting at 1
         """
 
-        return self.queryGenericRange(self._Cmd('queryMeasureCurrentRangeAuto'), self._Cmd('queryMeasureCurrentRange'), channel=None):
+        return self.queryGenericRange(self._Cmd('queryMeasureCurrentRangeAuto'), self._Cmd('queryMeasureCurrentRange'), channel=None)
             
     def setGenericProtection(self, value, cmdProt, cmdDelay, delay=None, channel=None, wait=None):
         """Set the generic protection value for the channel
@@ -736,7 +712,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        str = cmdProt.format(ovp)
+        str = cmdProt.format(value)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -754,7 +730,7 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        self.setGenericProtection(self, ovp, self._Cmd('setVoltageProtection'), self._Cmd('setVoltageProtectionDelay'), delay, channel, wait):
+        self.setGenericProtection(ovp, self._Cmd('setVoltageProtection'), self._Cmd('setVoltageProtectionDelay'), delay, channel, wait)
         
     def queryGenericProtection(self, qryProt, channel=None):
         """Return what the generic protection set value is
@@ -856,9 +832,10 @@ class SCPI(object):
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
-    def isVoltageProtectionTripped(self, channel=None):
-        """Return true if the OverVoltage Protection of channel is Tripped, else false
+    def isGenericTrue(self, cmdStr, channel=None):
+        """Return true if the result of cmdStr is ON, 1 or YES, else false
         
+           cmdStr  - SCPI command string to query
            channel - number of the channel starting at 1
         """
 
@@ -871,9 +848,17 @@ class SCPI(object):
             # If multi-channel device and channel parameter is passed, select it
             self._instWrite(self._Cmd('chanSelect').format(self.channel))
             
-        ret = self._instQuery(self._Cmd('isVoltageProtectionTripped'))
+        ret = self._instQuery(cmdStr)
         # @@@print("1:", ret)
         return self._onORoff_1OR0_yesORno(ret)
+    
+    def isVoltageProtectionTripped(self, channel=None):
+        """Return true if the OverVoltage Protection of channel is Tripped, else false
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.isGenericTrue(self._Cmd('isVoltageProtectionTripped'))
     
     def setVoltageCompliance(self, ovp, channel=None, wait=None):
         """Set the over-voltage compliance value for the channel. This is the measurement value at which the output is disabled.
@@ -883,7 +868,7 @@ class SCPI(object):
            wait    - number of seconds to wait after sending command
         """
 
-        self.setGenericProtection(self, ovp, self._Cmd('setVoltageCompliance'), None, None, channel, wait):
+        self.setGenericProtection(ovp, self._Cmd('setVoltageCompliance'), None, None, channel, wait)
 
     def queryVoltageCompliance(self, channel=None):
         """Return what the over-voltage compliance set value is
@@ -893,6 +878,14 @@ class SCPI(object):
         
         return self.queryGenericProtection(self._Cmd('queryVoltageCompliance'), channel)
 
+    def isVoltageComplianceTripped(self, channel=None):
+        """Return true if the Voltage Compliance of channel is Tripped, else false
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.isGenericTrue(self._Cmd('isVoltageComplianceTripped'))
+    
     def setCurrentCompliance(self, ovp, channel=None, wait=None):
         """Set the over-current compliance value for the channel. This is the measurement value at which the output is disabled.
         
@@ -901,7 +894,7 @@ class SCPI(object):
            wait    - number of seconds to wait after sending command
         """
 
-        self.setGenericProtection(self, ovp, self._Cmd('setCurrentCompliance'), None, None, channel, wait):
+        self.setGenericProtection(ovp, self._Cmd('setCurrentCompliance'), None, None, channel, wait)
 
     def queryCurrentCompliance(self, channel=None):
         """Return what the over-current compliance set value is
@@ -911,3 +904,11 @@ class SCPI(object):
         
         return self.queryGenericProtection(self._Cmd('queryCurrentCompliance'), channel)
 
+    def isCurrentComplianceTripped(self, channel=None):
+        """Return true if the Current Compliance of channel is Tripped, else false
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.isGenericTrue(self._Cmd('isCurrentComplianceTripped'))
+    

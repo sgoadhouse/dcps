@@ -31,6 +31,7 @@ are supported are:
 
 * Keithley/Tektronix 622x series Precision Current Source  *(tested with 6220)*
 * Keithley/Tektronix 2182/2182A Nanovoltmeter  *(tested with 2182A)*
+* Keithley/Tektronix 2400 series SourceMeter  *(tested with 2400)*
 
 
 # Installation
@@ -81,7 +82,7 @@ used. The only such interfaces that have been tested so far are:
   <img src="https://i.ebayimg.com/images/g/tegAAOSwLcNclY1g/s-l500.jpg" width="300">
 
 For the Agilent/Keysight E364xA, both the Prologix and KISS-488 have
-been tested and work. For the Keithley 622x and 2182, only the
+been tested and work. For the Keithley 622x, 2182 and 2400, only the
 Prologix interface works. If a `TCPIP0` resource string is used for
 these models, the code automatically determines which device is
 used. See the code comments for these models to learn more.
@@ -114,6 +115,7 @@ can be set and used as the VISA resource string.
 * for Keysight E364xA, it is `E364XA_VISA`
 * for Keithley 622x, it is `K622X_VISA`
 * for Keithley 2182, it is `K2182_VISA`
+* for Keithley 24xx, it is `K2400_VISA`
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource
@@ -173,7 +175,10 @@ For information on what is possible for the Keithley/Tektronix 622x series Preci
 supplies, see the [Model 6220 DC Current Source Model 6221 AC and DC Current Source User's Manual](https://www.tek.com/product-series/ultra-sensitive-current-sources-series-6200-manual/model-6220-dc-current-source-model)
 
 For information on what is possible for the Keithley/Tektronix 2182/2182A Nanovoltmeter
-supplies, see the [Models 2182 and 2182A Nanovoltmeter User's Manual ](https://www.tek.com/keithley-low-level-sensitive-and-specialty-instruments/keithley-nanovoltmeter-model-2182a-manual/models-2182-and-2182a-nanovoltmeter-users-manual)
+supplies, see the [Models 2182 and 2182A Nanovoltmeter User's Manual](https://www.tek.com/keithley-low-level-sensitive-and-specialty-instruments/keithley-nanovoltmeter-model-2182a-manual/models-2182-and-2182a-nanovoltmeter-users-manual)
+
+For information on what is possible for the Keithley/Tektronix 2400 series SourceMeter
+supplies, see the [Series 2400 SourceMeter User's Manual](https://download.tek.com/manual/2400S-900-01_K-Sep2011_User.pdf)
 
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the

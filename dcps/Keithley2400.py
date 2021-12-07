@@ -65,11 +65,9 @@ class Keithley2400(SCPI):
        minor code edits may be needed. For now, this code has only
        been tested with a KISS-488 or Prologix Ethernet to GPIB interface.
 
-       @@@@ CHECK
        Currently, could not get the KISS-488 interface to fully
-       support the Keithley 2182 although it works with other devices.
-       The Prologix interface worked great with the 2182.
-       @@@@ CHECK
+       support the Keithley 2400 although it works with other devices.
+       The Prologix interface worked great with the 2400.
 
     """
 
@@ -113,9 +111,9 @@ class Keithley2400(SCPI):
                                            timeout=2, # found that needed longer timeout
                                            query_delay=query_delay,  # for open_resource()
                                            **kwargs)
-
+        
         # NaN for this instrument
-        self.NaN = +9.9E37
+        self.NaN = +9.91E37
 
     
     def open(self):
@@ -226,70 +224,31 @@ class Keithley2400(SCPI):
            channel - number of the channel starting at 1
         """
 
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-                    
-        # select voltage function
-        #
-        # NOTE: not sure if it slows things down to do this every time
-        # so may want to make this smarter if need to speed up measurements.
-        self._instWrite("SENS:FUNC 'VOLT'") 
+        # If this function is used, assume non-concurrent measurements
+        self.setMeasureFunction(concurrent=False,voltage=True,channel=channel)
 
-        # Always select channel, even if channel parameter is not passed in.
-        self._instWrite(self._Cmd('chanSelect').format(self.channel))
-
-        val = self._instQuery('READ?')
-        return float(val)
+        # vals is a list of the return string [0] is voltage, [1] is current, [2] is resistance, [3] is timestamp, [4] is status
+        vals = self._instQuery('READ?').split(',')
+        return float(vals[0])
     
     def measureCurrent(self, channel=None):
-        """The 2182 performs no current measurements so override this command
+        """Read and return a current measurement from channel
         
            channel - number of the channel starting at 1
         """
-        print('NOTE: The Keithley 2182 performs no current measurements. Ignoring this command')
-        return (self.NaN)
 
-    def setVoltageProtection(self, ovp, delay=None, channel=None, wait=None):
-        """The 2182 has no output voltage protection/compliance to be set. Ignore except for any channel setting.
+        # If this function is used, assume non-concurrent measurements
+        self.setMeasureFunction(concurrent=False,current=True,channel=channel)
         
-           ovp     - desired over-voltage value as a floating point number
-           delay   - desired voltage protection delay time in seconds (not always supported)
-           wait    - number of seconds to wait after sending command
-           channel - number of the channel starting at 1
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-
-    def queryVoltageProtection(self, channel=None):
-        """The 2182 has no output voltage protection/compliance setting to query. Return invalid value.
-        
-        channel - number of the channel starting at 1
-        """
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-
-        return (self.NaN)
-
+        # vals is a list of the return string [0] is voltage, [1] is current, [2] is resistance, [3] is timestamp, [4] is status
+        vals = self._instQuery('READ?').split(',')
+        return float(vals[1])
+    
     def voltageProtectionOn(self, channel=None, wait=None):
-        """The 2182 has no voltage protection/compliance. Ignore command.
+        """The 2400 has no way to enable/disable voltage protection. Ignore command.
         
-           wait    - number of seconds to wait after sending command
            channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
         """
         # If a channel number is passed in, make it the
         # current channel
@@ -303,9 +262,10 @@ class Keithley2400(SCPI):
         pass
         
     def voltageProtectionOff(self, channel=None, wait=None):
-        """The 2182 has no voltage protection/compliance. Ignore command.
+        """The 2400 has no way to enable/disable voltage protection. Ignore command.
         
            channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
         """
         # If a channel number is passed in, make it the
         # current channel
@@ -319,7 +279,7 @@ class Keithley2400(SCPI):
         pass
 
     def voltageProtectionClear(self, channel=None, wait=None):
-        """The 2182 has no voltage protection/compliance. Ignore command.
+        """The 2400 automatically clears voltage protection trips. Ignore command.
         
            channel - number of the channel starting at 1
         """
@@ -334,70 +294,35 @@ class Keithley2400(SCPI):
 
         pass
     
-    def isVoltageProtectionTripped(self, channel=None):
-        """The 2182 cannot tell if the compliance limit has been reached or
-           not.  So always return True so if someone uses this,
-           hopefully the True will force them to figure out what is
-           going on.
-        
-           channel - number of the channel starting at 1
-
-        """
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-
-        return True
-
     ###################################################################
-    # Commands Specific to 2182
+    # Commands Specific to 2400
     ###################################################################
     
-    def setLineSync(self,on,wait=None):
-        """Enable/Disable Line Cycle Synchronization to reduce/increase measurement noise at expense of acquisition time.
-
-           on      - if True, Enable LSYNC, else Disable LSYNC
-           wait    - number of seconds to wait after sending command (need some time)
-        """
-
-        # If a wait time is NOT passed in, set wait to the
-        # default time
-        if wait is None:
-            wait = self._wait
-
-        self._instWrite('SYSTem:LSYNc {}'.format(self._bool2onORoff(on)))
-
-        sleep(wait)             # give some time for device to respond
-        
-    def queryLineSync(self):
-        """Query state of Line Cycle Synchronization
-
-           returns True if LSYNC is Enabled, else returns False
-        """
-
-        ret = self._instQuery('SYSTem:LSYNc?')
-        return self._onORoff_1OR0_yesORno(ret)
-            
     def displayMessageOn(self, top=True):
         """Enable Display Message
         
-           top     - Ignored (used by other models)
+           top     - True if enabling the Top message, else enable Bottom message
         """
 
-        self._instWrite('DISP:WIND1:TEXT:STAT ON')
+        if (top):
+            window = 'WIND1:'
+        else:
+            window = 'WIND2:'
 
+        self._instWrite('DISP:{}TEXT:STAT ON'.format(window))
+            
     def displayMessageOff(self, top=True):
         """Disable Display Message
         
-           top     - Ignored (used by other models)
+           top     - True if disabling the Top message, else disable Bottom message
         """
 
-        self._instWrite('DISP:WIND1:TEXT:STAT OFF')
+        if (top):
+            window = 'WIND1:'
+        else:
+            window = 'WIND2:'
+
+        self._instWrite('DISP:{}TEXT:STAT OFF'.format(window))
 
             
     def setDisplayMessage(self, message, top=True):
@@ -405,161 +330,324 @@ class Keithley2400(SCPI):
            displayMessageOff() to enable or disable message, respectively.
         
            message - message to set
-           top     - Ignored (used by other models)
+           top     - True if setting the Top message, else set Bottom message
 
         """
 
-        # Maximum of 12 characters for top message
-        if (len(message) > 12):
-            message = message[:12]
-        self._instWrite('DISP:WIND1:TEXT:DATA "{}"'.format(message))
+        if (top):
+            # Maximum of 20 characters for top message
+            if (len(message) > 20):
+                message = message[:20]
+            window = 'WIND1:'
+        else:
+            # Maximum of 32 characters for bottom message
+            if (len(message) > 32):
+                message = message[:32]
+            window = 'WIND2:'
 
-    def queryIntTemperature(self):
-        """Return the internal temperature of meter
+        self._instWrite('DISP:{}TEXT "{}"'.format(window,message))
+
+    def setSourceFunction(self, voltage=False, current=False, channel=None, wait=None):
+        """Set the Source Function for channel - either Voltage or Current
+
+           voltage    - set to True to measure voltage, else False
+           current    - set to True to measure current, else False
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+           NOTE: Error returned if more than one mode (voltage or current) is True.
         """
 
-        ret = self._instQuery('SENS:TEMP:RTEM?')
-        return float(ret)
+        # Check that one and only one mode is True
+        if (not (voltage     and not current) and
+            not (not voltage and current    )):
+
+            raise ValueError('setSourceFunction(): one and only one mode can be True.')
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'SOUR{}:FUNC:MODE'.format(self.channel)            
+
+        if (voltage):
+            self._instWrite(str+' VOLT')
+            
+        if (current):
+            self._instWrite(str+' CURR')
+
+            
+    def setMeasureFunction(self, concurrent=False, voltage=False, current=False, resistance=False, channel=None, wait=None):
+        """Set the Measure Function for channel
+
+           concurrent - set to True for multiple, concurrent measurements; otherwise False
+           voltage    - set to True to measure voltage, else False
+           current    - set to True to measure current, else False
+           resistance - set to True to measure resistance, else False
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+           NOTE: Error returned if concurrent is False and more than one mode (voltage, current or resistance) is True.
+        """
+
+        # Check that at least 1 mode is True
+        if (not voltage and not current and not resistance):
+            raise ValueError('setMeasureFunction(): At least one mode (voltage, current or resistance) must be True.')
+        
+        # Check that if current is False, only one mode is True
+        if (not concurrent and
+            not (voltage     and not current and not resistance) and
+            not (not voltage and current     and not resistance) and
+            not (not voltage and not current and resistance)):
+
+            raise ValueError('setMeasureFunction(): If concurrent is False, only one mode can be True.')
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'SENS{}:FUNC'.format(self.channel)            
+
+        if (concurrent):
+            self._instWrite(str+':CONC ON')
+        else:
+            self._instWrite(str+':CONC OFF')
+
+        # The :OFF commands should only execute if concurrent is True
+        if (voltage):
+            self._instWrite(str+':ON "VOLT"')
+        elif (concurrent):
+            self._instWrite(str+':OFF "VOLT"')
+            
+        if (current):
+            self._instWrite(str+':ON "CURR"')
+        elif (concurrent):
+            self._instWrite(str+':OFF "CURR"')
+            
+        if (resistance):
+            self._instWrite(str+':ON "RES"')
+        elif (concurrent):
+            self._instWrite(str+':OFF "RES"')
+            
+    def measureResistance(self, channel=None):
+        """Read and return a resistance measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        # If this function is used, assume non-concurrent measurements
+        self.setMeasureFunction(concurrent=False,resistance=True,channel=channel)
+
+        # vals is a list of the return string [0] is voltage, [1] is current, [2] is resistance, [3] is timestamp, [4] is status        
+        vals = self._instQuery('READ?').split(',')
+        return float(vals[2])
+    
+    def measureVCR(self, channel=None):
+        """Read and return a voltage, current and resistance measurement from channel
+        
+           channel - number of the channel starting at 1
+
+           NOTE: This does not force CONCURRENT measurements but for
+                 best results, before calling this, call
+                 setMeasureFunction(True,True,True,True).
+
+        """
+
+        # NOTE: DO NOT change MeasureFunction. Allow it to be whatever has been set so far (for speed of execution)
+
+        # valstrs is a list of the return string [0] is voltage, [1] is current, [2] is resistance, [3] is timestamp, [4] is status        
+        valstrs = self._instQuery('READ?').split(',')
+        # convert to floating point
+        vals = [float(f) for f in valstrs]
+        # status is really a binary value, so convert to int
+        vals[4] = int(vals[4])
+        # vals is a list of the return floats [0] is voltage, [1] is current, [2] is resistance, [3] is timestamp, [4] is status
+        # status is a binary integer - bit definitions from documentation:
+        #   Bit 0 (OFLO) — Set to 1 if measurement was made while in over-range.
+        #   Bit 1 (Filter) — Set to 1 if measurement was made with the filter enabled.
+        #   Bit 2 (Front/Rear) — Set to 1 if FRONT terminals are selected.
+        #   Bit 3 (Compliance) — Set to 1 if in real compliance.
+        #   Bit 4 (OVP) — Set to 1 if the over voltage protection limit was reached.
+        #   Bit 5 (Math) — Set to 1 if math expression (calc1) is enabled.
+        #   Bit 6 (Null) — Set to 1 if Null is enabled.
+        #   Bit 7 (Limits) — Set to 1 if a limit test (calc2) is enabled.
+        #   Bits 8 and 9 (Limit Results) — Provides limit test results (see grading and sorting modes below).
+        #   Bit 10 (Auto-ohms) — Set to 1 if auto-ohms enabled.
+        #   Bit 11 (V-Meas) — Set to 1 if V-Measure is enabled.
+        #   Bit 12 (I-Meas) — Set to 1 if I-Measure is enabled.
+        #   Bit 13 (Ω-Meas) — Set to 1 if Ω-Measure is enabled.
+        #   Bit 14 (V-Sour) — Set to 1 if V-Source used.
+        #   Bit 15 (I-Sour) — Set to 1 if I-Source used.
+        #   Bit 16 (Range Compliance) — Set to 1 if in range compliance.
+        return vals
+    
     
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='Access and control a Keithley/Tektronix 2182 Nanovoltmeter')
-    parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (max channel: 2)', default=1)
+    parser = argparse.ArgumentParser(description='Access and control a Keithley/Tektronix 2400 SourceMeter')
+    parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (max channel: 1)', default=1)
     args = parser.parse_args()
 
     from time import sleep
     from os import environ
     import sys
 
-    resource = environ.get('K2182_VISA', 'TCPIP0::192.168.1.20::23::SOCKET')
-    nanovm = Keithley2400(resource, gaddr=7, verbosity=1, query_delay=0.8)
-    nanovm.open()
+    resource = environ.get('K2400_VISA', 'TCPIP0::192.168.1.20::23::SOCKET')
+    srcmtr = Keithley2400(resource, gaddr=24, verbosity=1, query_delay=0.8)
+    srcmtr.open()
 
     # Reset to power on default
-    nanovm.rst()        
+    srcmtr.rst()        
 
-    print(nanovm.idn())
+    print(srcmtr.idn())
     print()
 
     # See if any errors in queue and print them if there are
     print('\nQuerying and printing out any SCPI errors in error queue of instrument:')
-    nanovm.printAllErrors()
+    srcmtr.printAllErrors()
     print()
     
-    nanovm.beeperOff()
-
-    origLineSync = nanovm.queryLineSync()
-    if (not origLineSync):
-        # Enable Line Sync if not enabled
-        nanovm.setLineSync(True)
+    srcmtr.beeperOff()
 
     # Set Voltage Range to AUTO
-    nanovm.setVoltageRange(None)
+    srcmtr.setVoltageRange(None)
     
-    print('Internal Temperature: {:6.4f} C'.
-              format(nanovm.queryIntTemperature()))
-                
-    print('Voltage: {:6.4e} V\n'.format(nanovm.measureVoltage()))
-    sleep(2.0)
-
     # Set display messages
-    nanovm.setDisplayMessage('Hey Man!')
+    srcmtr.setDisplayMessage('Bottom Message', top=False)
+    srcmtr.setDisplayMessage('Hey Man!', top=True)
 
-    # Enable it
-    nanovm.displayMessageOn()
+    # Enable top one first
+    srcmtr.displayMessageOn()
+    sleep(1.0)
+    srcmtr.displayMessageOn(top=False)
     sleep(2.0)
 
-    # Disable it
-    nanovm.displayMessageOff()
+    # Disable bottom one first
+    srcmtr.displayMessageOff(top=False)
     sleep(1.0)
+    srcmtr.displayMessageOff(top=True)
 
-    ## NOTE: Most of the following functions are attempting to treat
-    ## the 2182 like a power supply. The 2182 will either ignore most
-    ## of these or return self.NaN. These functions are here mainly to
-    ## make sure that these unused functions are handled cleanly.
-
-    print('Ch. {} Settings: {:6.4f} V  {:6.4f} A  {:4.2f} C '.
-              format(args.chan, nanovm.queryVoltage(),
-                     nanovm.queryCurrent(),
-                     nanovm.queryIntTemperature()))
-
-    voltageSave = nanovm.queryVoltage()
-    
-    print('{:6.4f}V / {:6.4f}A (limit: {:6.4f}A)\n'.format(nanovm.measureVoltage(), nanovm.measureCurrent(), nanovm.queryCurrent()))
-
-    print("Changing Output Voltage to 2.3V")
-    nanovm.setVoltage(2.3)
-    print('{:6.4f}V / {:6.4f}A (limit: {:6.4f}A)\n'.format(nanovm.measureVoltage(), nanovm.measureCurrent(), nanovm.queryCurrent()))
-
-    print("Set Over-Voltage Protection to 3.6V")
-    nanovm.setVoltageProtection(3.6)
-    print('OVP: {:6.4f}V\n'.format(nanovm.queryVoltageProtection()))
-
-    nanovm.voltageProtectionOff()
-    
-    print("Changing Output Voltage to 3.7V with OVP off")
-    nanovm.setVoltage(3.7)
-    print('{:6.4f}V / {:6.4f}A (limit: {:6.4f}A)\n'.format(nanovm.measureVoltage(), nanovm.measureCurrent(), nanovm.queryCurrent()))
-
-    ## Now, lets get to what 2182 can actually do
-
-    print("Step through different channel and voltage range settings.")
-    print("Ch. 1 has five ranges: 10mV, 100mV, 1V, 10V, 100V")
-    print("Ch. 2 has three ranges: 100mV, 1V, 10V\n")
-    
-    test_list = [(1,None,'AUTO'),
-                 (1,100, '100.000000'),
-                 (1,110, '100.000000'),
-                 (2,None, 'AUTO'),
-                 (2,1.0,  '1.000000'),
-                 (2,8,   '10.000000'),
-                 (2,11,  '10.000000'),
-                 (2,0.9,  '1.000000'),
-                 (2,10.1,'10.000000'),
-                 (2,1e-6, '0.100000'),
-                 (1,1e-3, '0.010000'),
-                 (1,0.001,'0.010000'),
-                 (2,1e-8, '0.100000'),
-                 (1,1e-8, '0.010000'),
-                 (1,0.007,'0.010000'),
-                 (1, 10, '10.000000'),
-                 (1,0.8,  '1.000000'),
-                 (1,2e-2, '0.100000'),
-                 ]
-
-    for vals in test_list:
-        nanovm.setVoltageRange(vals[1],channel=vals[0])
-
-        volt = nanovm.measureVoltage()
-        if volt == nanovm.NaN:
-            voltstr = '    Ovrflow'
+    # Test unique setMeasureFunction()
+    #
+    # Should get ValueError exception since no mode is true
+    test_params = ([False], [True],
+                   [False, True, True, False],
+                   [False, True, True, True],
+                   [False, False, True, True],
+                   [False, True, False, True])
+    for tp in test_params:
+        try:
+            srcmtr.setMeasureFunction(*tp)
+        except ValueError as err:
+            print('Got ValueError as expected: {}'.format(err))
         else:
-            voltstr = '{:6.4e}'.format(volt)
+            print('ERROR! Should have gotten a ValueError but did not. STOP TEST!')
+            srcmtr.outputOff()
+            srcmtr.beeperOn()
+            srcmtr.setLocal()
+            srcmtr.close()
+            sys.exit(2)
 
-        rangestr = nanovm.queryVoltageRange()
-        print('Test: Ch. {}/VRange {:5s} |{:10s}|  Results: {} V  {:4.2f} C '.
-              format(nanovm.channel, str(vals[1]), rangestr, voltstr,
-                     nanovm.queryIntTemperature()))
-        if (vals[2] != rangestr):
-            print('Unexpected Voltage Range Query: Exp. {}  Act. {}'.format(vals[2],rangestr))
-
-        #@@@#nanovm.printAllErrors()
-        print()
+    # Disable concurrent measurements
+    srcmtr.setMeasureFunction(concurrent=False, resistance=True)
+            
+    if not srcmtr.isOutputOn(args.chan):
+        srcmtr.outputOn()
         
+    print('Ch. {} Settings: {:6.4f} V  {:6.4f} A '.
+              format(args.chan, srcmtr.queryVoltage(), srcmtr.queryCurrent()))
 
-    # Turn off Line Sync if it was off originally
-    if (not origLineSync):
-        # Restore Line Sync
-        nanovm.setLineSync(False)
+    voltageSave = srcmtr.queryVoltage()
+    
+    print('Voltage: {:6.4e} V\n'.format(srcmtr.measureVoltage()))
+    sleep(2.0)
 
-    nanovm.beeperOn()
+    print('{:6.4e}V / {:6.4e}A (limit: {:6.4e}A)\n'.format(srcmtr.measureVoltage(), srcmtr.measureCurrent(), srcmtr.queryCurrent()))
+
+    if (srcmtr.isVoltageComplianceTripped()):
+        print('Good! Voltage Compliance Tripped as expected.')
+    else:
+        print('ERROR! Voltage Compliance should be Tripped!')
+        srcmtr.outputOff()
+        srcmtr.beeperOn()
+        srcmtr.setLocal()
+        srcmtr.close()
+        sys.exit(2)
+    
+    print("Changing Output Voltage to 2.3V")
+    srcmtr.setVoltage(2.3)
+    print('{:6.4e}V / {:6.4e}A (limit: {:6.4e}A)\n'.format(srcmtr.measureVoltage(), srcmtr.measureCurrent(), srcmtr.queryCurrent()))
+
+    print("Set Over-Voltage Protection to 10V")
+    srcmtr.setVoltageProtection(10)
+    print('OVP: {:6.4g}V\n'.format(srcmtr.queryVoltageProtection()))
+
+    print("Set Voltage Compliance to 3.6V")
+    srcmtr.setVoltageCompliance(3.6)
+    print('Cmpl: {:6.4g}V\n'.format(srcmtr.queryVoltageCompliance()))
+
+    srcmtr.outputOff()
+    print("Source Voltage")
+    srcmtr.setSourceFunction(voltage=True)
+    srcmtr.outputOn()
+    
+    print('{:6.4e}V / {:6.4e}A (limit: {:6.4e}V)\n'.format(srcmtr.measureVoltage(), srcmtr.measureCurrent(), srcmtr.queryVoltage()))
+
+    srcmtr.voltageProtectionOff()
+    
+    print("Changing Output Voltage to 23.7V - protection cannot be off")
+    srcmtr.setVoltage(23.7)
+
+    if (srcmtr.isVoltageProtectionTripped()):
+        print('Good! Voltage Protection Tripped as expected.')
+    else:
+        print('ERROR! Voltage Protection should be Tripped!')
+        srcmtr.outputOff()
+        srcmtr.beeperOn()
+        srcmtr.setLocal()
+        srcmtr.close()
+        sys.exit(2)
+        
+    print('{:6.4f}V / {:6.4f}A (limit: {:6.4f}V)\n'.format(srcmtr.measureVoltage(), srcmtr.measureCurrent(), srcmtr.queryVoltage()))
+
+    ########################################
+    
+    srcmtr.outputOff()
+    print("Source Current")
+    srcmtr.setSourceFunction(current=True)
+    # Set Auto current range
+    srcmtr.setCurrentRange(None)
+    # Set Concurrent Measurements
+    srcmtr.setMeasureFunction(concurrent=True,voltage=True,current=True,resistance=False)
+    srcmtr.setCurrent(1.34e-3)
+    srcmtr.outputOn()
+    
+    print('{:6.4f}V / {:6.4g}A / {:6.4f}ohms\n'.format(*srcmtr.measureVCR()[0:3]))
+    
+    ########################################
+
+    srcmtr.outputOff()
+
+    srcmtr.beeperOn()
 
     # See if any errors in queue and print them if there are
     print('\nQuerying and printing out any SCPI errors in error queue of instrument:')
-    nanovm.printAllErrors()
+    srcmtr.printAllErrors()
     print()
         
     ## return to LOCAL mode
-    nanovm.setLocal()
+    srcmtr.setLocal()
     
-    nanovm.close()
+    srcmtr.close()
