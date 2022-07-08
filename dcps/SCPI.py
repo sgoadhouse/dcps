@@ -572,7 +572,7 @@ class SCPI(object):
         channel - number of the channel starting at 1
         """
 
-        return self.fetchGenericValue(self._Cmd('queryVoltage'))
+        return self.fetchGenericValue(self._Cmd('queryVoltage'), channel)
     
     def queryGenericRange(self, cmdAuto, cmdRange, channel=None):
         """Query the generic range for channel
@@ -620,7 +620,7 @@ class SCPI(object):
         channel - number of the channel starting at 1
         """
 
-        return self.fetchGenericValue(self._Cmd('queryCurrent'))
+        return self.fetchGenericValue(self._Cmd('queryCurrent'), channel)
     
     
     def queryCurrentRange(self, channel=None):
@@ -637,7 +637,7 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        return self.fetchGenericValue(self._Cmd('measureVoltage'))
+        return self.fetchGenericValue(self._Cmd('measureVoltage'), channel)
     
     def setMeasureVoltageRange(self, upper, channel=None, wait=None):
         """Set the measurement voltage range for channel
@@ -667,7 +667,7 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        return self.fetchGenericValue(self._Cmd('measureCurrent'))
+        return self.fetchGenericValue(self._Cmd('measureCurrent'), channel)
     
     def setMeasureCurrentRange(self, upper, channel=None, wait=None):
         """Set the measurement current range for channel
