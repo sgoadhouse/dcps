@@ -155,7 +155,7 @@ class SCPI(object):
     def channel(self, value):
         if (value < 1) or (value > self._max_chan):
             raise ValueError('Invalid channel number: {}. Must be between {} and {}, inclusive.'.
-                                 format(channel, 1, self._max_chan))
+                                 format(value, 1, self._max_chan))
         self._curr_chan = value
 
     def _instQuery(self, queryStr):

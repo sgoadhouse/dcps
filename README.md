@@ -187,5 +187,5 @@ and the
 [SCPI Wikipedia](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) entry.
 
 # Contact
-Please send bug reports or feedback to Stephen Goadhouse
+Please send bug reports or feedback to [Stephen Goadhouse](https://github.com/sgoadhouse)
 

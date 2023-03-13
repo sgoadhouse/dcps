@@ -15,7 +15,7 @@ except(IOError, ImportError):
 
 
 setup(name="dcps", 
-      version='0.5.7',
+      version='0.5.9',
       description='Control of DC Power Supplies through python',
       long_description_content_type='text/markdown',
       long_description=long_description,
