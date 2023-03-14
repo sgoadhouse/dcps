@@ -84,16 +84,20 @@ class SCPI(object):
         'voltageProtectionClear':        'SOURce:VOLTage:PROTection:CLEar',
         'setVoltageCompliance':          'SENSe:VOLTage:PROTection:LEVel {}',
         'queryVoltageCompliance':        'SENSe:VOLTage:PROTection:LEVel?',
+        'isVoltageComplianceTripped':    'SENSe:VOLTage:PROTection:TRIPped?',
+        'voltageComplianceClear':        'SENSe:VOLTage:PROTection:CLEar',
         'setCurrentProtection':          'SOURce:CURRent:PROTection:LEVel {}',
         'setCurrentProtectionDelay':     'SOURce:CURRent:PROTection:DELay {}',
         'queryCurrentProtection':        'SOURce:CURRent:PROTection:LEVel?',
         'currentProtectionOn':           'SOURce:CURRent:PROTection:STATe ON',
         'currentProtectionOff':          'SOURce:CURRent:PROTection:STATe OFF',
         'isCurrentProtectionOn':         'SOURce:CURRent:PROTection:STATe?',
+        'isCurrentProtectionTripped':    'SOURce:CURRent:PROTection:TRIPped?',
+        'currentProtectionClear':        'SOURce:CURRent:PROTection:CLEar',
         'setCurrentCompliance':          'SENSe:CURRent:PROTection:LEVel {}',
         'queryCurrentCompliance':        'SENSe:CURRent:PROTection:LEVel?',
-        'isVoltageComplianceTripped':    'SENSe:VOLTage:PROTection:TRIPped?',
         'isCurrentComplianceTripped':    'SENSe:CURRent:PROTection:TRIPped?',
+        'currentComplianceClear':        'SENSe:CURRent:PROTection:CLEar',
     }
 
     # Official SCPI numeric value for Not A Number
@@ -798,8 +802,8 @@ class SCPI(object):
     def voltageProtectionOn(self, channel=None, wait=None):
         """Enable Over-Voltage Protection on the output for channel
         
-           wait    - number of seconds to wait after sending command
            channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
         """
 
         # If a channel number is passed in, make it the
@@ -860,10 +864,19 @@ class SCPI(object):
         ret = self._instQuery(self._Cmd('isVoltageProtectionOn'))
         return self._onORoff_1OR0_yesORno(ret)
 
+    def isVoltageProtectionTripped(self, channel=None):
+        """Return true if the OverVoltage Protection of channel is Tripped, else false
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.isGenericTrue(self._Cmd('isVoltageProtectionTripped'), channel)
+    
     def voltageProtectionClear(self, channel=None, wait=None):
         """Clear Over-Voltage Protection Trip on the output for channel
         
            channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
         """
 
         # If a channel number is passed in, make it the
@@ -883,14 +896,6 @@ class SCPI(object):
         str = self._Cmd('voltageProtectionClear')
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
-    
-    def isVoltageProtectionTripped(self, channel=None):
-        """Return true if the OverVoltage Protection of channel is Tripped, else false
-        
-           channel - number of the channel starting at 1
-        """
-
-        return self.isGenericTrue(self._Cmd('isVoltageProtectionTripped'))
     
     def setVoltageCompliance(self, ovp, channel=None, wait=None):
         """Set the over-voltage compliance value for the channel. This is the measurement value at which the output is disabled.
@@ -916,7 +921,32 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        return self.isGenericTrue(self._Cmd('isVoltageComplianceTripped'))
+        return self.isGenericTrue(self._Cmd('isVoltageComplianceTripped'), channel)
+
+    def voltageComplianceClear(self, channel=None, wait=None):
+        """Clear Voltage Compliance Trip on the output for channel
+        
+           channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+                    
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('voltageComplianceClear')
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
     #
     #-------------------------------------------------------------------------------
     
@@ -963,7 +993,8 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
 
-        self._instWrite(self._Cmd('currentProtectionOn'))
+        str = self._Cmd('currentProtectionOn')
+        self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
     def currentProtectionOff(self, channel=None, wait=None):
@@ -985,7 +1016,8 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
 
-        self._instWrite(self._Cmd('currentProtectionOff'))
+        str = self._Cmd('currentProtectionOff')
+        self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
     def isCurrentProtectionOn(self, channel=None):
@@ -1005,15 +1037,48 @@ class SCPI(object):
         ret = self._instQuery(self._Cmd('isCurrentProtectionOn'))
         return self._onORoff_1OR0_yesORno(ret)
 
-    def setCurrentCompliance(self, ovp, channel=None, wait=None):
-        """Set the over-current compliance value for the channel. This is the measurement value at which the output is disabled.
+    def isCurrentProtectionTripped(self, channel=None):
+        """Return true if the OverCurrent Protection of channel is Tripped, else false
         
-           ovp     - desired over-current compliance value as a floating point number
+           channel - number of the channel starting at 1
+        """
+
+        return self.isGenericTrue(self._Cmd('isCurrentProtectionTripped'), channel)
+    
+    def currentProtectionClear(self, channel=None, wait=None):
+        """Clear Over-Current Protection Trip on the output for channel
+        
            channel - number of the channel starting at 1
            wait    - number of seconds to wait after sending command
         """
 
-        self.setGenericProtection(ovp, self._Cmd('setCurrentCompliance'), None, None, channel, wait)
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+                    
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('currentProtectionClear')
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+    
+    def setCurrentCompliance(self, ocp, channel=None, wait=None):
+        """Set the over-current compliance value for the channel. This is the measurement value at which the output is disabled.
+        
+           ocp     - desired over-current compliance value as a floating point number
+           channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
+        """
+
+        self.setGenericProtection(ocp, self._Cmd('setCurrentCompliance'), None, None, channel, wait)
 
     def queryCurrentCompliance(self, channel=None):
         """Return what the over-current compliance set value is
@@ -1029,7 +1094,32 @@ class SCPI(object):
            channel - number of the channel starting at 1
         """
 
-        return self.isGenericTrue(self._Cmd('isCurrentComplianceTripped'))
+        return self.isGenericTrue(self._Cmd('isCurrentComplianceTripped'), channel)
+
+    def currentComplianceClear(self, channel=None, wait=None):
+        """Clear Current Compliance Trip on the output for channel
+        
+           channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+                    
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('currentComplianceClear')
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
     #
     #-------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------
