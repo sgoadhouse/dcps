@@ -79,6 +79,7 @@ class SCPI(object):
         'queryVoltageProtection':        'SOURce:VOLTage:PROTection:LEVel?',
         'voltageProtectionOn':           'SOURce:VOLTage:PROTection:STATe ON',
         'voltageProtectionOff':          'SOURce:VOLTage:PROTection:STATe OFF',
+        'isVoltageProtectionOn':         'SOURce:VOLTage:PROTection:STATe?',
         'isVoltageProtectionTripped':    'SOURce:VOLTage:PROTection:TRIPped?',
         'voltageProtectionClear':        'SOURce:VOLTage:PROTection:CLEar',
         'setVoltageCompliance':          'SENSe:VOLTage:PROTection:LEVel {}',
@@ -807,6 +808,22 @@ class SCPI(object):
         str = self._Cmd('voltageProtectionOff')
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
+
+    def isVoltageProtectionOn(self, channel=None):
+        """Return true if voltage protection for channel is ON, else false
+
+           channel - number of the channel starting at 1
+        """
+        # If a channel number is passed in, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+
+        ret = self._instQuery(self._Cmd('isVoltageProtectionOn'))
+        return self._onORoff_1OR0_yesORno(ret)
 
     def voltageProtectionClear(self, channel=None, wait=None):
         """Clear Over-Voltage Protection Trip on the output for channel
