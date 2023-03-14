@@ -236,6 +236,26 @@ class SCPI(object):
         else:
             return False
         
+    def isGenericTrue(self, cmdStr, channel=None):
+        """Return true if the result of cmdStr is ON, 1 or YES, else false
+        
+           cmdStr  - SCPI command string to query
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        ret = self._instQuery(cmdStr)
+        # @@@print("1:", ret)
+        return self._onORoff_1OR0_yesORno(ret)
+    
     def _waitCmd(self):
         """Wait until all preceeding commands complete"""
         #self._instWrite('*WAI')
@@ -693,7 +713,12 @@ class SCPI(object):
         """
 
         return self.queryGenericRange(self._Cmd('queryMeasureCurrentRangeAuto'), self._Cmd('queryMeasureCurrentRange'), channel=None)
-            
+
+    #-------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------
+    # Functions to handle protections
+    #-------------------------------------------------------------------------------
+    #
     def setGenericProtection(self, value, cmdProt, cmdDelay, delay=None, channel=None, wait=None):
         """Set the generic protection value for the channel
         
@@ -728,17 +753,6 @@ class SCPI(object):
             self._instWrite(str)
             sleep(wait)             # give some time for PS to respond
         
-    def setVoltageProtection(self, ovp, delay=None, channel=None, wait=None):
-        """Set the over-voltage protection value for the channel
-        
-           ovp     - desired over-voltage value as a floating point number
-           delay   - desired voltage protection delay time in seconds (not always supported)
-           wait    - number of seconds to wait after sending command
-           channel - number of the channel starting at 1
-        """
-
-        self.setGenericProtection(ovp, self._Cmd('setVoltageProtection'), self._Cmd('setVoltageProtectionDelay'), delay, channel, wait)
-        
     def queryGenericProtection(self, qryProt, channel=None):
         """Return what the generic protection set value is
         
@@ -758,6 +772,21 @@ class SCPI(object):
         ret = self._instQuery(qryProt)
         return float(ret)
     
+    #-------------------------------------------------------------------------------
+    # Functions to handle Voltage protections
+    #-------------------------------------------------------------------------------
+    #
+    def setVoltageProtection(self, ovp, delay=None, channel=None, wait=None):
+        """Set the over-voltage protection value for the channel
+        
+           ovp     - desired over-voltage value as a floating point number
+           delay   - desired voltage protection delay time in seconds (not always supported)
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        self.setGenericProtection(ovp, self._Cmd('setVoltageProtection'), self._Cmd('setVoltageProtectionDelay'), delay, channel, wait)
+        
     def queryVoltageProtection(self, channel=None):
         """Return what the over-voltage protection set value is
         
@@ -855,26 +884,6 @@ class SCPI(object):
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
-    def isGenericTrue(self, cmdStr, channel=None):
-        """Return true if the result of cmdStr is ON, 1 or YES, else false
-        
-           cmdStr  - SCPI command string to query
-           channel - number of the channel starting at 1
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        if (self._max_chan > 1 and channel is not None):
-            # If multi-channel device and channel parameter is passed, select it
-            self._instWrite(self._Cmd('chanSelect').format(self.channel))
-            
-        ret = self._instQuery(cmdStr)
-        # @@@print("1:", ret)
-        return self._onORoff_1OR0_yesORno(ret)
-    
     def isVoltageProtectionTripped(self, channel=None):
         """Return true if the OverVoltage Protection of channel is Tripped, else false
         
@@ -908,7 +917,13 @@ class SCPI(object):
         """
 
         return self.isGenericTrue(self._Cmd('isVoltageComplianceTripped'))
+    #
+    #-------------------------------------------------------------------------------
     
+    #-------------------------------------------------------------------------------
+    # Functions to handle Current protections
+    #-------------------------------------------------------------------------------
+    #
     def setCurrentProtection(self, ocp, delay=None, channel=None, wait=None):
         """Set the over-current protection value for the channel
 
@@ -1015,4 +1030,7 @@ class SCPI(object):
         """
 
         return self.isGenericTrue(self._Cmd('isCurrentComplianceTripped'))
+    #
+    #-------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------
     
