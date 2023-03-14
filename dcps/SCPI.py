@@ -84,6 +84,12 @@ class SCPI(object):
         'voltageProtectionClear':        'SOURce:VOLTage:PROTection:CLEar',
         'setVoltageCompliance':          'SENSe:VOLTage:PROTection:LEVel {}',
         'queryVoltageCompliance':        'SENSe:VOLTage:PROTection:LEVel?',
+        'setCurrentProtection':          'SOURce:CURRent:PROTection:LEVel {}',
+        'setCurrentProtectionDelay':     'SOURce:CURRent:PROTection:DELay {}',
+        'queryCurrentProtection':        'SOURce:CURRent:PROTection:LEVel?',
+        'currentProtectionOn':           'SOURce:CURRent:PROTection:STATe ON',
+        'currentProtectionOff':          'SOURce:CURRent:PROTection:STATe OFF',
+        'isCurrentProtectionOn':         'SOURce:CURRent:PROTection:STATe?',
         'setCurrentCompliance':          'SENSe:CURRent:PROTection:LEVel {}',
         'queryCurrentCompliance':        'SENSe:CURRent:PROTection:LEVel?',
         'isVoltageComplianceTripped':    'SENSe:VOLTage:PROTection:TRIPped?',
@@ -903,6 +909,87 @@ class SCPI(object):
 
         return self.isGenericTrue(self._Cmd('isVoltageComplianceTripped'))
     
+    def setCurrentProtection(self, ocp, delay=None, channel=None, wait=None):
+        """Set the over-current protection value for the channel
+
+           ocp     - desired over-current value as a floating point number
+           delay   - desired current protection delay time in seconds (not always supported)
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        self.setGenericProtection(ocp, self._Cmd('setCurrentProtection'), self._Cmd('setCurrentProtectionDelay'), delay, channel, wait)
+
+    def queryCurrentProtection(self, channel=None):
+        """Return what the over-current protection set value is
+
+        channel - number of the channel starting at 1
+        """
+
+        return self.queryGenericProtection(self._Cmd('queryCurrentProtection'), channel)
+
+    def currentProtectionOn(self, channel=None, wait=None):
+        """Enable Over-Current Protection on the output for channel
+
+           channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
+        """
+
+        # If a channel number is passed in, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        self._instWrite(self._Cmd('currentProtectionOn'))
+        sleep(wait)             # give some time for PS to respond
+
+    def currentProtectionOff(self, channel=None, wait=None):
+        """Disable Over-Current Protection on the output for channel
+
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        self._instWrite(self._Cmd('currentProtectionOff'))
+        sleep(wait)             # give some time for PS to respond
+
+    def isCurrentProtectionOn(self, channel=None):
+        """Return true if current protection for channel is ON, else false
+
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+
+        ret = self._instQuery(self._Cmd('isCurrentProtectionOn'))
+        return self._onORoff_1OR0_yesORno(ret)
+
     def setCurrentCompliance(self, ovp, channel=None, wait=None):
         """Set the over-current compliance value for the channel. This is the measurement value at which the output is disabled.
         
