@@ -26,3 +26,6 @@ from dcps.Keithley2182 import Keithley2182
 # Support of Keithley/Tektronix 2400 Series SourceMeter
 # connected to GPIB port through a KISS-488 or Prologix Ethernet to GPIB interface
 from dcps.Keithley2400 import Keithley2400
+
+# Support of Rigol DL3031A and other DL3000 family electronic loads
+from dcps.RigolDL3000 import RigolDL3000

@@ -52,6 +52,9 @@ class SCPI(object):
         'isOutput':                      'OUTPut:STATe?',
         'outputOn':                      'OUTPut:STATe ON',
         'outputOff':                     'OUTPut:STATe OFF',
+        'isInput':                       'INPut:STATe?',
+        'inputOn':                       'INPut:STATe ON',
+        'inputOff':                      'INPut:STATe OFF',
         'setVoltage':                    'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}',
         'setVoltageRangeAuto':           'SOURce{:1d}:VOLTage:RANGe:AUTO {}',
         'setVoltageRange':               'SOURce{:1d}:VOLTage:RANGe {:.3e}',
@@ -65,15 +68,21 @@ class SCPI(object):
         'queryCurrentRangeAuto':         'SOURce{:1d}:CURRent:RANGe:AUTO?',
         'queryCurrentRange':             'SOURce{:1d}:CURRent:RANGe?',
         'measureVoltage':                'MEASure:VOLTage:DC?',
+        'measureVoltageMax':             'MEASure:VOLTage:MAX?',
+        'measureVoltageMin':             'MEASure:VOLTage:MIN?',
         'setMeasureVoltageRangeAuto':    'SENSe{:1d}:VOLTage:RANGe:AUTO {}',
         'setMeasureVoltageRange':        'SENSe{:1d}:VOLTage:RANGe {:.3e}',
         'queryMeasureVoltageRangeAuto':  'SENSe{:1d}:VOLTage:RANGe:AUTO?',
         'queryMeasureVoltageRange':      'SENSe{:1d}:VOLTage:RANGe?',
         'measureCurrent':                'MEASure:CURRent:DC?',
+        'measureCurrentMax':             'MEASure:CURRent:MAX?',
+        'measureCurrentMin':             'MEASure:CURRent:MIN?',
         'setMeasureCurrentRangeAuto':    'SENSe{:1d}:CURRent:RANGe:AUTO {}',
         'setMeasureCurrentRange':        'SENSe{:1d}:CURRent:RANGe {:.3e}',
         'queryMeasureCurrentRangeAuto':  'SENSe{:1d}:CURRent:RANGe:AUTO?',
         'queryMeasureCurrentRange':      'SENSe{:1d}:CURRent:RANGe?',
+        'measureResistance':             'MEASure:RESistance:DC?',        
+        'measurePower':                  'MEASure:POWer:DC?',        
         'setVoltageProtection':          'SOURce:VOLTage:PROTection:LEVel {}',
         'setVoltageProtectionDelay':     'SOURce:VOLTage:PROTection:DELay {}',
         'queryVoltageProtection':        'SOURce:VOLTage:PROTection:LEVel?',
@@ -473,6 +482,113 @@ class SCPI(object):
             
         sleep(wait)             # give some time for PS to respond
     
+    def isInputOn(self, channel=None):
+        """Return true if the input of channel is ON, else false
+        
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        str = self._Cmd('isInput')
+        ret = self._instQuery(str)
+        # @@@print("1:", ret)
+        return self._onORoff_1OR0_yesORno(ret)
+    
+    def inputOn(self, channel=None, wait=None):
+        """Turn on the input for channel
+        
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+                        
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('inputOn')
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+    
+    def inputOff(self, channel=None, wait=None):
+        """Turn off the input for channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+                    
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('inputOff')
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+    
+    def inputOnAll(self, wait=None):
+        """Turn on the input for ALL channels
+        
+        """
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        for chan in range(1,self._max_chan+1):
+            if (self._max_chan > 1):
+                # If multi-channel device, select next channel
+                self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+            str = self._Cmd('inputOn')
+            
+        sleep(wait)             # give some time for PS to respond
+    
+    def inputOffAll(self, wait=None):
+        """Turn off the input for ALL channels
+        
+        """
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        for chan in range(1,self._max_chan+1):
+            if (self._max_chan > 1):
+                # If multi-channel device, select next channel
+                self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+            str = self._Cmd('inputOff')
+            
+        sleep(wait)             # give some time for PS to respond
+    
     def setVoltage(self, voltage, channel=None, wait=None):
         """Set the voltage value for the channel
         
@@ -670,6 +786,22 @@ class SCPI(object):
 
         return self.fetchGenericValue(self._Cmd('measureVoltage'), channel)
     
+    def measureVoltageMax(self, channel=None):
+        """Read and return the maximum voltage measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('measureVoltageMax'), channel)
+    
+    def measureVoltageMin(self, channel=None):
+        """Read and return the minimum voltage measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('measureVoltageMin'), channel)
+    
     def setMeasureVoltageRange(self, upper, channel=None, wait=None):
         """Set the measurement voltage range for channel
 
@@ -700,6 +832,22 @@ class SCPI(object):
 
         return self.fetchGenericValue(self._Cmd('measureCurrent'), channel)
     
+    def measureCurrentMax(self, channel=None):
+        """Read and return the maximum current measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('measureCurrentMax'), channel)
+    
+    def measureCurrentMin(self, channel=None):
+        """Read and return the minimum current measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('measureCurrentMin'), channel)
+    
     def setMeasureCurrentRange(self, upper, channel=None, wait=None):
         """Set the measurement current range for channel
 
@@ -718,6 +866,23 @@ class SCPI(object):
 
         return self.queryGenericRange(self._Cmd('queryMeasureCurrentRangeAuto'), self._Cmd('queryMeasureCurrentRange'), channel=None)
 
+    def measureResistance(self, channel=None):
+        """Read and return a resistance measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('measureResistance'), channel)
+    
+    def measurePower(self, channel=None):
+        """Read and return a power measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        return self.fetchGenericValue(self._Cmd('measurePower'), channel)
+    
+    
     #-------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------
     # Functions to handle protections

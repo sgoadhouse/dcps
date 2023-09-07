@@ -15,8 +15,8 @@ except(IOError, ImportError):
 
 
 setup(name="dcps", 
-      version='0.5.9',
-      description='Control of DC Power Supplies through python',
+      version='0.7.0',
+      description='Control of DC Power Supplies/DC Electronic Loads/DMMs/SourceMeters through python',
       long_description_content_type='text/markdown',
       long_description=long_description,
       url='https://github.com/sgoadhouse/dcps',
@@ -25,7 +25,7 @@ setup(name="dcps",
       maintainer='Stephen Goadhouse',
       maintainer_email="sgoadhouse@virginia.edu",
       license='MIT',
-      keywords=['Rigol', 'DP800', 'DP832A', 'AimTTI', 'BK', '9115', 'Keysight', 'Agilent', 'Keithley',
+      keywords=['Rigol', 'DP800', 'DP832A', 'DL3000', 'DL3031A', 'AimTTI', 'BK', '9115', 'Keysight', 'Agilent', 'Keithley',
                 'E3642A', 'E364xA', '6220', '6221', '2182', '2182A', '2400',
                 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
       classifiers=[
