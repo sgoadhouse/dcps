@@ -29,3 +29,6 @@ from dcps.Keithley2400 import Keithley2400
 
 # Support of Rigol DL3031A and other DL3000 family electronic loads
 from dcps.RigolDL3000 import RigolDL3000
+
+# Support of Keithley DMM6500 Digital Multimeter
+from dcps.Keithley6500 import Keithley6500

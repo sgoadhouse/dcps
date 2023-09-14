@@ -26,7 +26,7 @@ setup(name="dcps",
       maintainer_email="sgoadhouse@virginia.edu",
       license='MIT',
       keywords=['Rigol', 'DP800', 'DP832A', 'DL3000', 'DL3031A', 'AimTTI', 'BK', '9115', 'Keysight', 'Agilent', 'Keithley',
-                'E3642A', 'E364xA', '6220', '6221', '2182', '2182A', '2400',
+                'E3642A', 'E364xA', '6220', '6221', '2182', '2182A', '2400', 'DMM6500',
                 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
       classifiers=[
         'Development Status :: 4 - Beta',
