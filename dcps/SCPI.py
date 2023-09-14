@@ -39,7 +39,7 @@ from time import sleep
 import pyvisa
 
 class SCPI(object):
-    """Basic class for controlling and accessing a Power Supply with Standard SCPI Commands"""
+    """Basic class for controlling and accessing a Power Supply and other related Instruments with Standard SCPI Commands"""
 
     # Commands that can be "overloaded" by child classes if need a different syntax
     _SCPICmdTbl = {
@@ -123,7 +123,7 @@ class SCPI(object):
         """Init the class with the instruments resource string
 
         resource   - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
-        max_chan   - number of channels in power supply
+        max_chan   - number of channels in instrument
         wait       - float that gives the default number of seconds to wait after sending each command
         cmd_prefix - optional command prefix (ie. some instruments require a ':' prefix)
         verbosity  - optional verbosity value - set to 0 to disable debug outputs, or non-0 for outputs
@@ -179,7 +179,11 @@ class SCPI(object):
         self._curr_chan = value
 
     def _instQuery(self, queryStr):
-        if (queryStr[0] != '*' and queryStr[0:2] != '++'):
+        if (queryStr[0] == '-'):
+            # Any command that starts with '-' means that it should
+            # NOT have a prefix and the '-' needs to be removed.
+            queryStr = queryStr[1:]
+        elif (queryStr[0] != '*' and queryStr[0:2] != '++'):
             # '*' start SCPI common commands and never have a prefix
             # '++' is used by Prologix Ethernet GPIB interface and should not have prefix prepended either
             queryStr = self._prefix + queryStr
@@ -191,7 +195,11 @@ class SCPI(object):
         return resp
         
     def _instWrite(self, writeStr):
-        if (writeStr[0] != '*' and writeStr[0:2] != '++'):
+        if (writeStr[0] == '-'):
+            # Any command that starts with '-' means that it should
+            # NOT have a prefix and the '-' needs to be removed.
+            writeStr = writeStr[1:]
+        elif (writeStr[0] != '*' and writeStr[0:2] != '++'):
             # '*' start SCPI common commands and never have a prefix
             # '++' is used by Prologix Ethernet GPIB interface and should not have prefix prepended either
             writeStr = self._prefix + writeStr
@@ -343,7 +351,7 @@ class SCPI(object):
         
         
     def setLocal(self):
-        """Set the power supply to LOCAL mode where front panel keys work again
+        """Set the instrument to LOCAL mode where front panel keys work again
         """
 
         # Not sure if this is SCPI, but it appears to be supported
@@ -351,7 +359,7 @@ class SCPI(object):
         self._instWrite(self._Cmd('setLocal'))
     
     def setRemote(self):
-        """Set the power supply to REMOTE mode where it is controlled via VISA
+        """Set the instrument to REMOTE mode where it is controlled via VISA
         """
 
         # Not sure if this is SCPI, but it appears to be supported
@@ -359,7 +367,7 @@ class SCPI(object):
         self._instWrite(self._Cmd('setRemote'))
     
     def setRemoteLock(self):
-        """Set the power supply to REMOTE Lock mode where it is
+        """Set the instrument to REMOTE Lock mode where it is
            controlled via VISA & front panel is locked out
         """
 
