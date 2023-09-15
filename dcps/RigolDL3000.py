@@ -42,6 +42,22 @@ import pyvisa as visa
 class RigolDL3000(SCPI):
     """Basic class for controlling and accessing a Rigol DL3000 Family Electronic Load"""
 
+    ## Dictionary to translate SCPI commands for this device
+    _xlateCmdTbl = {
+        'setVoltage':                    'SOURce:VOLTage:LEVel:IMMediate {}',
+        'setVoltageRangeAuto':           None,
+        'setVoltageRange':               'SOURce:VOLTage:RANGe {1:}',
+        'setCurrent':                    'SOURce:CURRent:LEVel:IMMediate {}',
+        'setCurrentRangeAuto':           None,
+        'setCurrentRange':               'SOURce:CURRent:RANGe {1:}',
+        'queryVoltage':                  'SOURce:VOLTage:LEVel:IMMediate?',
+        'queryVoltageRangeAuto':         None,
+        'queryVoltageRange':             'SOURce:VOLTage:RANGe?',
+        'queryCurrent':                  'SOURce:CURRent:LEVel:IMMediate?',
+        'queryCurrentRangeAuto':         None,
+        'queryCurrentRange':             'SOURce:CURRent:RANGe?',        
+    }
+    
     def __init__(self, resource, wait=1.0, verbosity=0, **kwargs):
         """Init the class with the instruments resource string
 
@@ -50,7 +66,7 @@ class RigolDL3000(SCPI):
         verbosity - verbosity output - set to 0 for no debug output
         kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
         """
-        super(RigolDL3000, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix=':', verbosity = verbosity, **kwargs)
+        super(RigolDL3000, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix=':', read_termination='\n', verbosity = verbosity, **kwargs)
 
 
     def beeperOn(self):
@@ -66,7 +82,48 @@ class RigolDL3000(SCPI):
         # instead of raising an exception and breaking any scripts,
         # simply return quietly.
         pass
+
+    def setLocal(self):
+        """Set the instrument to LOCAL mode where front panel keys
+        work again.
+
+        WARNING! MUST BE LAST Command sent or else Instrument goes back to Remote mode
+
+        """
+
+        # enable Virtual Front Panel
+        self._instWrite('DEBug:KEY 1')
+        sleep(1.0)
+        k = 8 # Press Local key
+        self._instWrite('SYSTem:KEY {}'.format(k))
+
+        #for k in [9,40,40,40,40,0,8]:
+        #    print('Pressing key {}'.format(k))
+        #    self._instWrite('SYSTem:KEY {}'.format(k))
+        #    sleep(1.0)
+
+    def setRemote(self):
+        """Set the instrument to REMOTE mode where it is controlled via VISA
+        """
+
+        # NOTE: Unsupported command by this device. However, with any
+        # command sent to the DL3000, it automatically goes into
+        # REMOTE mode. Instead of raising an exception and breaking
+        # any scripts, simply return quietly.
+        pass
+    
+    def setRemoteLock(self):
+        """Set the instrument to REMOTE Lock mode where it is
+           controlled via VISA & front panel is locked out
+        """
+        # NOTE: Unsupported command by this device. However, with any
+        # command sent to the DL3000, it automatically goes into
+        # REMOTE mode.
+        #
+        # Disable the remote virtual panel, just in case
+        self._instWrite('DEBug:KEY 0')
         
+    
         
     ###################################################################
     # Commands Specific to DL3000
@@ -96,7 +153,78 @@ class RigolDL3000(SCPI):
 
         return self.fetchGenericValue('SOURce:CURRent:VON?', channel)
             
-    
+    def setFunctionMode(self, mode, channel=None, wait=None):
+        """Set the source function mode/input regulation mode for the channel
+        
+           mode     - a string which names the desired function mode. valid ones:
+                      FIXed|LIST|WAVe|BATTery|OCP|OPP
+           wait     - number of seconds to wait after sending command
+           channel  - number of the channel starting at 1
+        """
+
+        # Check mode to be valid
+        if (mode[0:3] not in ["FIX", "WAV", "OCP", "OPP"] and
+            mode[0:4] not in ["LIST", "BATT"]):
+            raise ValueError('setFunctionMode(): "{}" is an unknown function mode.'.format(mode))
+        
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = 'SOURce:FUNCtion:MODE {}'.format(mode)
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+
+    def queryFunctionMode(self, channel=None, query_delay=None):
+        """Return what the FUNCTION MODE/input regulation mode is set to
+        
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        return self.fetchGenericString('SOURce:FUNCtion:MODE?', channel, query_delay)
+
+    def setSenseState(self, on, channel=None, wait=None):
+        """Enable or Disable the Sense Inputs
+
+           on         - set to True to Enable use of the Sense inputs or False to Disable them
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'SOURce:SENSE {}'.format(self._bool2onORoff(on))
+
+        self._instWrite(str)
+
+        sleep(wait)             # give some time for device to respond
+
+    def querySenseState(self, channel=None, query_delay=None):
+        """Return the state of the Sense Input
+        
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        return self.fetchGenericBoolean('SOURce:SENSe?', channel, query_delay)
+        
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Access and control a Rigol DL3000 electronic load')
@@ -105,49 +233,83 @@ if __name__ == '__main__':
 
     from time import sleep
     from os import environ
-    resource = environ.get('DL3000_IP', 'TCPIP0::172.16.2.13::INSTR')
+    resource = environ.get('DL3000_VISA', 'TCPIP0::172.16.2.13::INSTR')
     rigol = RigolDL3000(resource)
     rigol.open()
 
+    # Reset
+    rigol.rst(wait=1.0)
+    rigol.cls(wait=1.0)
+
+    print(rigol.idn())
+    
     ## set Remote Lock On
-    #rigol.setRemoteLock()
+    rigol.setRemoteLock()
     
     rigol.beeperOff()
-    
-    if not rigol.isOutputOn(args.chan):
-        rigol.outputOn()
+
+    if (True):
+        print('Current function: {} & mode: {}'.format(rigol.queryFunction(),rigol.queryFunctionMode()))
+        sleep(1.0)
+
+        rigol.setFunctionMode("FIX", wait=2.0)            
         
-    print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-              format(args.chan, rigol.queryVoltage(),
-                         rigol.queryCurrent()))
+        for func in ["CURRent","RESistance","VOLTage","POWer"]:
+            print('Set to function: {} ...'.format(func))
+            rigol.setFunction(func,wait=2.0)
+            print('Current function: {} & mode: {}'.format(rigol.queryFunction(),rigol.queryFunctionMode()))
 
-    voltageSave = rigol.queryVoltage()
-    
-    #print(rigol.idn())
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+        for mode in ["FIXed","LIST","WAVe","BATTERY","OCP","OPP"]:
+            print('Set to mode: {} ...'.format(mode))
+            rigol.setFunctionMode(mode,wait=2.0)            
+            print('Current function: {} & mode: {}'.format(rigol.queryFunction(),rigol.queryFunctionMode()))
+                
+        #@@@#rigol.setFunctionMode("FIX",wait=0.5)
+        rigol.setFunction("CURR", wait=0.5)
+        print('Current function: {} & mode: {}'.format(rigol.queryFunction(),rigol.queryFunctionMode()))
+        sleep(1.0)
 
-    rigol.setVoltage(2.7)
+        print('\nCurrent Sense State: {}'.format('ON' if rigol.querySenseState() else 'OFF'))
+        print('Enable State Inputs ...')
+        rigol.setSenseState(True)
+        print('Current Sense State: {}'.format('ON' if rigol.querySenseState() else 'OFF'))
+        print('Disable State Inputs ...')
+        rigol.setSenseState(False)
+        print('Current Sense State: {}'.format('ON' if rigol.querySenseState() else 'OFF'))
+        
+        rigol.setSenseState(True)
+        print('Current Sense State: {}'.format('ON' if rigol.querySenseState() else 'OFF'))
+        
+        if not rigol.isInputOn(args.chan):
+            rigol.inputOn()
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+        print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
+                  format(args.chan, rigol.queryVoltage(),
+                             rigol.queryCurrent()))
 
-    rigol.setVoltage(2.3)
+        #print(rigol.idn())
+        print('{:6.4f} V'.format(rigol.measureVoltage()))
+        print('{:6.4f} A'.format(rigol.measureCurrent()))
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+        rigol.setCurrent(0.2)
 
-    rigol.setVoltage(voltageSave)
+        print('{:6.4f} V'.format(rigol.measureVoltage()))
+        print('{:6.4f} A'.format(rigol.measureCurrent()))
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+        rigol.setCurrent(0.4)
+
+        print('{:6.4f} V'.format(rigol.measureVoltage()))
+        print('{:6.4f} A'.format(rigol.measureCurrent()))
 
     ## turn off the channel
-    rigol.outputOff()
+    rigol.inputOff()
 
     rigol.beeperOn()
 
+    rigol.printAllErrors()    
+    rigol.cls()
+    
     ## return to LOCAL mode
     rigol.setLocal()
-    
+
     rigol.close()
