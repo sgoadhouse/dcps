@@ -45,7 +45,8 @@ class Keithley6500(SCPI):
 
     ## Dictionary to translate SCPI commands for this device
     _xlateCmdTbl = {
-        #@@@#'setLocal':                      ':TRIG:CONT REST\r\nLOGOUT',
+        'setMeasureVoltageRange':        'SENSe{:1d}:VOLTage:RANGe {}', # removed format of value so can use DEF/MIN/MAX
+        'setMeasureCurrentRange':        'SENSe{:1d}:CURRent:RANGe {}', # removed format of value so can use DEF/MIN/MAX
     }
 
     def __init__(self, resource, wait=0.01, verbosity=0, **kwargs):
@@ -592,7 +593,78 @@ class Keithley6500(SCPI):
         sleep(wait)             # give some time for device to respond
 
         return float(offset)
+
+    ## Can use setMeasureVoltageRange()/setMeasureCurrentRange()
+    ## inherited from SCPI.py. This method is here to support the
+    ## other functions of the DMM9500 using the multiple function
+    ## parameter format. Voltage and Current can be used here too.
+    def setMeasureRange(self, upper, function=None, channel=None, wait=None):
+        """Set the measurement range for the selected function and channel
+
+           upper    - floating point value for (upper) range, set to None for AUTO
+           function - a key from self._functions{} to select the measurement function or None for default
+           channel  - number of the channel starting at 1
+           wait     - number of seconds to wait after sending command
+        """
+
+        if (function is None):
+            # Use the, hopefully previously set, self._functionStr
+            functionStr = self._functionStr
+        else:
+            # Else, use the passed in function string
+            functionStr = function
+
+        # Lookup function
+        functionCmdStr = self._functions.get(functionStr)
+        if not functionCmdStr:
+            raise ValueError('setIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
+
+        ## Not all Functions support setting Range so raise
+        ## ValueError() if trying to set Range for one of those.
+        allowedFunctions = ['VOLT','VOLT:AC','CURR','CURR:AC','RES','FRES','CAP','VOLT:RATio',]
+        if (functionCmdStr not in allowedFunctions):
+            raise ValueError('setMeasureRange(): Setting Range is not valid for function "{}".'.format(functionStr))
+        
+        cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO {}'
+        cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe {}'
+        
+        self.setGenericRange(upper, cmdAuto, cmdRange, channel, wait)
     
+    ## Can use queryMeasureVoltageRange()/queryMeasureCurrentRange()
+    ## inherited from SCPI.py. This method is here to support the
+    ## other functions of the DMM9500 using the multiple function
+    ## parameter format. Voltage and Current can be used here too.
+    def queryMeasureRange(self, function=None, channel=None):
+        """Query the measurement range for selected function and channel
+
+           function - a key from self._functions{} to select the measurement function or None for default
+           channel  - number of the channel starting at 1
+        """
+
+        if (function is None):
+            # Use the, hopefully previously set, self._functionStr
+            functionStr = self._functionStr
+        else:
+            # Else, use the passed in function string
+            functionStr = function
+
+        # Lookup function
+        functionCmdStr = self._functions.get(functionStr)
+        if not functionCmdStr:
+            raise ValueError('queryIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
+        
+        ## Not all Functions support querying Range so raise
+        ## ValueError() if trying to query Range for one of those.
+        allowedFunctions = ['VOLT','VOLT:AC','CURR','CURR:AC','RES','FRES','CAP','VOLT:RATio',]
+        if (functionCmdStr not in allowedFunctions):
+            raise ValueError('queryMeasureRange(): Querying Range is not valid for function "{}".'.format(functionStr))
+
+        cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO?'
+        cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe?'
+
+        return self.queryGenericRange(cmdAuto, cmdRange, channel)
+
+
     def measureVoltage(self, channel=None, query_delay=None):
         """Read and return a DC Voltage measurement from channel
         
@@ -737,7 +809,7 @@ class Keithley6500(SCPI):
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
-    
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Access and control a Keithley DMM6500 digital multimeter')
@@ -753,12 +825,12 @@ if __name__ == '__main__':
     # Reset
     dmm.rst(wait=1.0)
     dmm.cls(wait=1.0)
-    
+
     print(dmm.idn())
-    
+
     ## set Remote Lock On
     dmm.setRemoteLock()
-    
+
     dmm.beeperOff()
 
     # Set display messages
@@ -772,10 +844,10 @@ if __name__ == '__main__':
     dmm.setDisplayMessage('New Top Message', top=True)
     dmm.setDisplayMessage('New Bottom Message', top=False)
     sleep(2.0)
-    
+
     # Disable messages
     dmm.displayMessageOff()
-    
+
     if not dmm.isInputOn(args.chan):
         dmm.inputOn()
 
@@ -794,7 +866,7 @@ if __name__ == '__main__':
 
     dmm.setRelativeOffsetState(True)
     dmm.setRelativeOffsetState(True,function='CurrentDC')
-    
+
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
@@ -807,13 +879,13 @@ if __name__ == '__main__':
     print('{:6.4g} A'.format(dmm.measureCurrent()))
     print('{:6.4g} A'.format(dmm.measureCurrent()))
     print('')
-    
+
     dmm.setRelativeOffsetState(False,function='VoltageDC')
     dmm.setRelativeOffsetState(False)
 
     print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
     print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))
-    
+
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
@@ -836,7 +908,7 @@ if __name__ == '__main__':
     dmm.setIntegrationTime(10.0,function='CurrentDC')
     print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
     print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))
-    
+
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
@@ -849,27 +921,99 @@ if __name__ == '__main__':
     print('{:6.4g} A'.format(dmm.measureCurrent()))
     print('{:6.4g} A'.format(dmm.measureCurrent()))
 
-    
-    # Reset again and try reading from all functions, except DIODE
-    # which may be determental to any circuits we are connected to
-    # during testing.
-    dmm.rst(wait=1.0)
-    dmm.cls(wait=1.0)
-    
     print('')
-    #@@@#print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
-    #@@@#print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))    
-    print('AC Voltage:  {:6.4g} V'.format(dmm.measureVoltageAC(query_delay=3.0)))
-    print('AC Current:  {:6.4g} A'.format(dmm.measureCurrentAC(query_delay=3.0)))
-    print('Resistance:  {:6.4g} Ohm'.format(dmm.measureResistance()))
-    print('Resistance (4W): {:6.4g} Ohm'.format(dmm.measureResistance4W()))
-    #@@@#print('{:6.4g} V'.format(dmm.measureDiode()))
-    print('Capacitance: {:6.4g} F'.format(dmm.measureCapacitance()))
-    print('Temperature: {:6.4g} C'.format(dmm.measureTemperature()))
-    print('Continuity:  {:6.4g} Ohm'.format(dmm.measureContinuity()))
-    print('Frequency:   {:6.4g} Hz'.format(dmm.measureFrequency(query_delay=3.0)))
-    print('Period:      {:6.4g} s'.format(dmm.measurePeriod(query_delay=3.0)))
-    print('Volt Ratio:  {:6.4g} V/V'.format(dmm.measureVoltageRatio()))
+    print('ASCII SIG FIGs: {}'.format(dmm.queryAsciiPrecision()))
+    print('{:16.14g} V'.format(dmm.measureVoltage()))
+    print('Set Sig Figs to MAX:')
+    dmm.setAsciiPrecision('MAX')
+    print('ASCII SIG FIGs: {}'.format(dmm.queryAsciiPrecision()))
+    print('{:16.14g} V'.format(dmm.measureVoltage()))
+    print('Set Sig Figs to 0 (automatic):')
+    dmm.setAsciiPrecision(0)
+    print('ASCII SIG FIGs: {}'.format(dmm.queryAsciiPrecision()))
+    print('{:16.14g} V'.format(dmm.measureVoltage()))
+    print('Set Sig Figs to 10:')
+    dmm.setAsciiPrecision(10)
+    print('ASCII SIG FIGs: {}'.format(dmm.queryAsciiPrecision()))
+    print('{:16.14g} V'.format(dmm.measureVoltage()))
+
+    print('')
+    print('Voltage DC    Range: {}'.format(dmm.queryMeasureVoltageRange()))
+    print('Voltage DC    Range: {}'.format(dmm.queryMeasureRange(function='VoltageDC')))
+    print('Voltage AC    Range: {}'.format(dmm.queryMeasureRange(function='VoltageAC')))
+    print('Current DC    Range: {}'.format(dmm.queryMeasureCurrentRange()))
+    print('Current AC    Range: {}'.format(dmm.queryMeasureRange(function='CurrentDC')))
+    print('Current AC    Range: {}'.format(dmm.queryMeasureRange(function='CurrentAC')))
+    print('Resistance 2W Range: {}'.format(dmm.queryMeasureRange(function='Resistance2W')))
+    print('Resistance 4W Range: {}'.format(dmm.queryMeasureRange(function='Resistance4W')))
+    #@@@#print('Diode         Range: {}'.format(dmm.queryMeasureRange(function='Diode')))
+    print('Capacitance   Range: {}'.format(dmm.queryMeasureRange(function='Capacitance')))
+    #@@@#print('Temperature   Range: {}'.format(dmm.queryMeasureRange(function='Temperature')))
+    #@@@#print('Continuity    Range: {}'.format(dmm.queryMeasureRange(function='Continuity')))
+    #@@@#print('Frequency     Range: {}'.format(dmm.queryMeasureRange(function='Frequency')))
+    #@@@#print('Period        Range: {}'.format(dmm.queryMeasureRange(function='Period')))
+    print('VoltageRatio  Range: {}'.format(dmm.queryMeasureRange(function='VoltageRatio')))
+
+    print('\nSetting ranges')
+    dmm.setMeasureVoltageRange(3e-3)
+    dmm.setMeasureRange(4e-2,function='VoltageAC')
+    dmm.setMeasureCurrentRange(5e-6)
+    dmm.setMeasureRange(2,function='CurrentAC')
+    dmm.setMeasureRange(6e3,function='Resistance2W')
+    dmm.setMeasureRange(7e-4,function='Resistance4W')
+    dmm.setMeasureRange(8e-9,function='Capacitance')
+    dmm.setMeasureRange(9e-4,function='VoltageRatio')
+    
+    print('Voltage DC    Range: {}'.format(dmm.queryMeasureVoltageRange()))
+    print('Voltage AC    Range: {}'.format(dmm.queryMeasureRange(function='VoltageAC')))
+    print('Current DC    Range: {}'.format(dmm.queryMeasureCurrentRange()))
+    print('Current AC    Range: {}'.format(dmm.queryMeasureRange(function='CurrentAC')))
+    print('Resistance 2W Range: {}'.format(dmm.queryMeasureRange(function='Resistance2W')))
+    print('Resistance 4W Range: {}'.format(dmm.queryMeasureRange(function='Resistance4W')))
+    print('Capacitance   Range: {}'.format(dmm.queryMeasureRange(function='Capacitance')))
+    print('VoltageRatio  Range: {}'.format(dmm.queryMeasureRange(function='VoltageRatio')))
+
+    print('\nSetting ranges #2')
+    dmm.setMeasureVoltageRange('MAX')
+    dmm.setMeasureRange('MIN',function='VoltageAC')
+    dmm.setMeasureCurrentRange(None)
+    dmm.setMeasureRange('DEF',function='CurrentAC')
+    dmm.setMeasureRange('MAX',function='Resistance2W')
+    dmm.setMeasureRange('MIN',function='Resistance4W')
+    dmm.setMeasureRange(None,function='Capacitance')
+    dmm.setMeasureRange('Def',function='VoltageRatio')
+    
+    print('Voltage DC    Range: {}'.format(dmm.queryMeasureVoltageRange()))
+    print('Voltage AC    Range: {}'.format(dmm.queryMeasureRange(function='VoltageAC')))
+    print('Current DC    Range: {}'.format(dmm.queryMeasureCurrentRange()))
+    print('Current AC    Range: {}'.format(dmm.queryMeasureRange(function='CurrentAC')))
+    print('Resistance 2W Range: {}'.format(dmm.queryMeasureRange(function='Resistance2W')))
+    print('Resistance 4W Range: {}'.format(dmm.queryMeasureRange(function='Resistance4W')))
+    print('Capacitance   Range: {}'.format(dmm.queryMeasureRange(function='Capacitance')))
+    print('VoltageRatio  Range: {}'.format(dmm.queryMeasureRange(function='VoltageRatio')))
+
+
+    if (1):
+        # Reset again and try reading from all functions, except DIODE
+        # which may be determental to any circuits we are connected to
+        # during testing.
+        dmm.rst(wait=1.0)
+        dmm.cls(wait=1.0)
+
+        print('')
+        #@@@#print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
+        #@@@#print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))    
+        print('AC Voltage:  {:6.4g} V'.format(dmm.measureVoltageAC(query_delay=3.0)))
+        print('AC Current:  {:6.4g} A'.format(dmm.measureCurrentAC(query_delay=3.0)))
+        print('Resistance:  {:6.4g} Ohm'.format(dmm.measureResistance()))
+        print('Resistance (4W): {:6.4g} Ohm'.format(dmm.measureResistance4W()))
+        #@@@#print('{:6.4g} V'.format(dmm.measureDiode()))
+        print('Capacitance: {:6.4g} F'.format(dmm.measureCapacitance()))
+        print('Temperature: {:6.4g} C'.format(dmm.measureTemperature()))
+        print('Continuity:  {:6.4g} Ohm'.format(dmm.measureContinuity()))
+        print('Frequency:   {:6.4g} Hz'.format(dmm.measureFrequency(query_delay=3.0)))
+        print('Period:      {:6.4g} s'.format(dmm.measurePeriod(query_delay=3.0)))
+        print('Volt Ratio:  {:6.4g} V/V'.format(dmm.measureVoltageRatio()))
     
     ## turn off the channel
     dmm.inputOff()
