@@ -73,7 +73,11 @@ class Keithley6500(SCPI):
         # default measurement function if not supplied as parameter into the method
         self._functionStr = None
         
-        super(Keithley6500, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix=':', verbosity = verbosity, read_termination = '\n', **kwargs)
+        super(Keithley6500, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix=':',
+                                           verbosity = verbosity,
+                                           read_termination = '\n',
+                                           query_delay=0.01,
+                                           **kwargs)
 
     def setLocal(self):
         """Set the instrument to LOCAL mode where front panel keys
@@ -299,7 +303,8 @@ class Keithley6500(SCPI):
             wait = self._wait
 
         str = 'SENS{}:FUNC:ON "{}"'.format(self.channel, functionCmdStr)            
-
+        #@@@#print("   setMeasureFunction() string: '{}'".format(str))
+        
         self._instWrite(str)
 
     def setAutoZero(self, on, function=None, channel=None, wait=None):
@@ -366,7 +371,7 @@ class Keithley6500(SCPI):
             wait = self._wait
 
         str = 'SENS{}:AZERo:ONCE'.format(self.channel)
-        print('AutoZero Once String: {}'.format(str))
+        #@@@#print('AutoZero Once String: {}'.format(str))
 
         self._instWrite(str)
 
@@ -395,7 +400,7 @@ class Keithley6500(SCPI):
         # Lookup function
         functionCmdStr = self._functions.get(functionStr)
         if not functionCmdStr:
-            raise ValueError('setAutoZero(): "{}" is an unknown function.'.format(functionStr))
+            raise ValueError('setRelativeOffset(): "{}" is an unknown function.'.format(functionStr))
 
                     
         # If a channel number is passed in, make it the
@@ -439,7 +444,7 @@ class Keithley6500(SCPI):
         # Lookup function
         functionCmdStr = self._functions.get(functionStr)
         if not functionCmdStr:
-            raise ValueError('setAutoZero(): "{}" is an unknown function.'.format(functionStr))
+            raise ValueError('queryRelativeOffset(): "{}" is an unknown function.'.format(functionStr))
 
                     
         # If a channel number is passed in, make it the
@@ -482,7 +487,7 @@ class Keithley6500(SCPI):
         # Lookup function
         functionCmdStr = self._functions.get(functionStr)
         if not functionCmdStr:
-            raise ValueError('setAutoZero(): "{}" is an unknown function.'.format(functionStr))
+            raise ValueError('setRelativeOffsetState(): "{}" is an unknown function.'.format(functionStr))
 
                     
         # If a channel number is passed in, make it the
@@ -504,18 +509,91 @@ class Keithley6500(SCPI):
         sleep(wait)             # give some time for device to respond
 
         
-    def measureResistance(self, channel=None):
-        """Read and return a resistance measurement from channel
-        
-           channel - number of the channel starting at 1
+    def setIntegrationTime(self, nplc, function=None, channel=None, wait=None):
+        """Set the time that the input signal is measured for the selected Function
+
+           nplc       - number of power-line cycles as a floating point number
+                        nplc can also be "DEF" for default, "MAX" for maximum or "MIN" for minimum
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
         """
 
-        self.setMeasureFunction(function="Resistance2W",channel=channel)
+        if (function is None):
+            # Use the, hopefully previously set, self._functionStr
+            functionStr = self._functionStr
+        else:
+            # Else, use the passed in function string
+            functionStr = function
 
-        val = self._instQuery('READ?')        
-        return float(val)
+        # Lookup function
+        functionCmdStr = self._functions.get(functionStr)
+        if not functionCmdStr:
+            raise ValueError('setIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'SENS{}:{}:NPLC {}'.format(self.channel, functionCmdStr, nplc)
+
+        #@@@#print('Integration Time String: {}'.format(str))
+
+        self._instWrite(str)
+
+        sleep(wait)             # give some time for device to respond
         
-    def measureVoltage(self, channel=None):
+        
+    def queryIntegrationTime(self, function=None, channel=None, wait=None):
+        """Query the set time to measure the input signal for the selected function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        if (function is None):
+            # Use the, hopefully previously set, self._functionStr
+            functionStr = self._functionStr
+        else:
+            # Else, use the passed in function string
+            functionStr = function
+
+        # Lookup function
+        functionCmdStr = self._functions.get(functionStr)
+        if not functionCmdStr:
+            raise ValueError('queryIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        str = 'SENS{}:{}:NPLC?'.format(self.channel, functionCmdStr)
+
+        #@@@#print('Integration Time Query String: {}'.format(str))
+
+        offset = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        return float(offset)
+    
+    def measureVoltage(self, channel=None, query_delay=None):
         """Read and return a DC Voltage measurement from channel
         
            channel - number of the channel starting at 1
@@ -524,11 +602,22 @@ class Keithley6500(SCPI):
         self.setMeasureFunction(function="VoltageDC",channel=channel)
 
         #@@@#vals = self._instQuery('READ?').split(',')
-        val = self._instQuery('READ?')
+        val = self._instQuery('READ?',delay=query_delay)        
         #@@@#print('Value: "{}" / {}'.format(val,float(val)))
         return float(val)
         
-    def measureCurrent(self, channel=None):
+    def measureVoltageAC(self, channel=None, query_delay=None):
+        """Read and return an AC Voltage measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="VoltageAC",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)
+        return float(val)
+        
+    def measureCurrent(self, channel=None, query_delay=None):
         """Read and return a DC Current measurement from channel
         
            channel - number of the channel starting at 1
@@ -536,9 +625,119 @@ class Keithley6500(SCPI):
 
         self.setMeasureFunction(function="CurrentDC",channel=channel)
 
-        val = self._instQuery('READ?')
+        val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
         
+    def measureCurrentAC(self, channel=None, query_delay=None):
+        """Read and return an AC Current measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="CurrentAC",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+
+    def measureResistance(self, channel=None, query_delay=None):
+        """Read and return a resistance measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Resistance2W",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+        
+    def measureResistance4W(self, channel=None, query_delay=None):
+        """Read and return a resistance measurement using 4-Wire from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Resistance4W",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+        
+    def measureDiode(self, channel=None, query_delay=None):
+        """Read and return a diode measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Diode",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+        
+    def measureCapacitance(self, channel=None, query_delay=None):
+        """Read and return a capacitance measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Capacitance",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+
+    def measureTemperature(self, channel=None, query_delay=None):
+        """Read and return a temperature measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Temperature",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+
+    def measureContinuity(self, channel=None, query_delay=None):
+        """Read and return a continuity measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Continuity",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+
+    def measureFrequency(self, channel=None, query_delay=None):
+        """Read and return a frequency measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Frequency",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+
+    def measurePeriod(self, channel=None, query_delay=None):
+        """Read and return a period measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="Period",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+
+    def measureVoltageRatio(self, channel=None, query_delay=None):
+        """Read and return a voltage ratio measurement from channel
+        
+           channel - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function="VoltageRatio",channel=channel)
+
+        val = self._instQuery('READ?',delay=query_delay)        
+        return float(val)
+    
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Access and control a Keithley DMM6500 digital multimeter')
@@ -551,6 +750,10 @@ if __name__ == '__main__':
     dmm = Keithley6500(resource)
     dmm.open()
 
+    # Reset
+    dmm.rst(wait=1.0)
+    dmm.cls(wait=1.0)
+    
     print(dmm.idn())
     
     ## set Remote Lock On
@@ -607,6 +810,9 @@ if __name__ == '__main__':
     
     dmm.setRelativeOffsetState(False,function='VoltageDC')
     dmm.setRelativeOffsetState(False)
+
+    print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
+    print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))
     
     print('{:9.7g} V'.format(dmm.measureVoltage()))
     print('{:9.7g} V'.format(dmm.measureVoltage()))
@@ -620,6 +826,51 @@ if __name__ == '__main__':
     print('{:6.4g} A'.format(dmm.measureCurrent()))
     print('{:6.4g} A'.format(dmm.measureCurrent()))
 
+    dmm.setRelativeOffset("MAXIMUM", function='VoltageDC')
+    dmm.setRelativeOffset("DEF", function='CurrentDC')
+
+    print('Relative Offsets: {:9.7g} V {:9.7g} A'.format(dmm.queryRelativeOffset(function='VoltageDC'),dmm.queryRelativeOffset(function='CurrentDC')))
+
+    print('')
+    dmm.setIntegrationTime(10.0,function='VoltageDC')
+    dmm.setIntegrationTime(10.0,function='CurrentDC')
+    print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
+    print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))
+    
+    print('{:9.7g} V'.format(dmm.measureVoltage()))
+    print('{:9.7g} V'.format(dmm.measureVoltage()))
+    print('{:9.7g} V'.format(dmm.measureVoltage()))
+    print('{:9.7g} V'.format(dmm.measureVoltage()))
+    print('{:9.7g} V'.format(dmm.measureVoltage()))
+
+    print('{:6.4g} A'.format(dmm.measureCurrent()))
+    print('{:6.4g} A'.format(dmm.measureCurrent()))
+    print('{:6.4g} A'.format(dmm.measureCurrent()))
+    print('{:6.4g} A'.format(dmm.measureCurrent()))
+    print('{:6.4g} A'.format(dmm.measureCurrent()))
+
+    
+    # Reset again and try reading from all functions, except DIODE
+    # which may be determental to any circuits we are connected to
+    # during testing.
+    dmm.rst(wait=1.0)
+    dmm.cls(wait=1.0)
+    
+    print('')
+    #@@@#print('Integration Time (DC Voltage): {} NPLC'.format(dmm.queryIntegrationTime(function='VoltageDC')))
+    #@@@#print('Integration Time (DC Current): {} NPLC'.format(dmm.queryIntegrationTime(function='CurrentDC')))    
+    print('AC Voltage:  {:6.4g} V'.format(dmm.measureVoltageAC(query_delay=3.0)))
+    print('AC Current:  {:6.4g} A'.format(dmm.measureCurrentAC(query_delay=3.0)))
+    print('Resistance:  {:6.4g} Ohm'.format(dmm.measureResistance()))
+    print('Resistance (4W): {:6.4g} Ohm'.format(dmm.measureResistance4W()))
+    #@@@#print('{:6.4g} V'.format(dmm.measureDiode()))
+    print('Capacitance: {:6.4g} F'.format(dmm.measureCapacitance()))
+    print('Temperature: {:6.4g} C'.format(dmm.measureTemperature()))
+    print('Continuity:  {:6.4g} Ohm'.format(dmm.measureContinuity()))
+    print('Frequency:   {:6.4g} Hz'.format(dmm.measureFrequency(query_delay=3.0)))
+    print('Period:      {:6.4g} s'.format(dmm.measurePeriod(query_delay=3.0)))
+    print('Volt Ratio:  {:6.4g} V/V'.format(dmm.measureVoltageRatio()))
+    
     ## turn off the channel
     dmm.inputOff()
 
