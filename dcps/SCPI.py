@@ -178,7 +178,7 @@ class SCPI(object):
                                  format(value, 1, self._max_chan))
         self._curr_chan = value
 
-    def _instQuery(self, queryStr):
+    def _instQuery(self, queryStr, delay=None):
         if (queryStr[0] == '-'):
             # Any command that starts with '-' means that it should
             # NOT have a prefix and the '-' needs to be removed.
@@ -189,7 +189,7 @@ class SCPI(object):
             queryStr = self._prefix + queryStr
         if self._verbosity >= 3:
             print("QUERY:",queryStr)
-        resp = self._inst.query(queryStr)
+        resp = self._inst.query(queryStr, delay=delay)
         if self._verbosity >= 3:
             print("   QUERY Response:", resp)
         return resp
