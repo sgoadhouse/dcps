@@ -55,6 +55,8 @@ class SCPI(object):
         'isInput':                       'INPut:STATe?',
         'inputOn':                       'INPut:STATe ON',
         'inputOff':                      'INPut:STATe OFF',
+        'setFunction':                   'SOURce:FUNCtion {}',
+        'queryFunction':                 'SOURce:FUNCtion?',
         'setVoltage':                    'SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}',
         'setVoltageRangeAuto':           'SOURce{:1d}:VOLTage:RANGe:AUTO {}',
         'setVoltageRange':               'SOURce{:1d}:VOLTage:RANGe {:.3e}',
@@ -67,6 +69,8 @@ class SCPI(object):
         'queryCurrent':                  'SOURce:CURRent:LEVel:IMMediate:AMPLitude?',
         'queryCurrentRangeAuto':         'SOURce{:1d}:CURRent:RANGe:AUTO?',
         'queryCurrentRange':             'SOURce{:1d}:CURRent:RANGe?',
+        'setMeasureFunction':            'SENse:FUNCtion {}',
+        'queryMeasureFunction':          'SENse:FUNCtion?',
         'measureVoltage':                'MEASure:VOLTage:DC?',
         'measureVoltageMax':             'MEASure:VOLTage:MAX?',
         'measureVoltageMin':             'MEASure:VOLTage:MIN?',
@@ -668,11 +672,48 @@ class SCPI(object):
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
+    def setFunction(self, function, channel=None, wait=None):
+        """Set the source function for the channel
+        
+           function - a string which names the function. common ones:
+                      VOLTage, CURRent, RESistance, POWer        
+           wait     - number of seconds to wait after sending command
+           channel  - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('setFunction').format(function)
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+
+    def queryFunction(self, channel=None, query_delay=None):
+        """Return what FUNCTION is the current one for sourcing
+        
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        return self.fetchGenericString(self._Cmd('queryFunction'), channel, query_delay)
+    
     def setGenericRange(self, value, cmdAuto, cmdRange, channel=None, wait=None):
         """Set a generic range for channel to value using commands cmdAuto and cmdRange
 
            value    - floating point value to set range, set to None for AUTO
-           cmdAuto  - SCPI command string to use to set the range to AUTO
+           cmdAuto  - SCPI command string to use to set the range to AUTO or None if no such command
            cmdRange - SCPI command string to use to set the RANGE
            channel  - number of the channel starting at 1
            wait     - number of seconds to wait after sending command
@@ -689,13 +730,17 @@ class SCPI(object):
             wait = self._wait
             
         if (value is None):
-            # Set for AUTO range
-            str = cmdAuto.format(self.channel, 'ON')
-            self._instWrite(str)
+            if (cmdAuto is not None):                
+                # Set for AUTO range
+                #
+                # NOTE: If value and cmdAuto are both None, nothing happens
+                str = cmdAuto.format(self.channel, 'ON')
+                self._instWrite(str)
         else:
-            # Disable AUTO range and set the range to value
-            str = cmdAuto.format(self.channel, 'OFF')
-            self._instWrite(str)
+            if (cmdAuto is not None):                
+                # Disable AUTO range and set the range to value, unless cmdAuto is None
+                str = cmdAuto.format(self.channel, 'OFF')
+                self._instWrite(str)
             #@@@#str = cmdRange.format(self.channel, float(value))
             str = cmdRange.format(self.channel, value) # allow strings DEF/MIN/MAX
             self._instWrite(str)
@@ -747,11 +792,13 @@ class SCPI(object):
 
         self.setGenericRange(upper, self._Cmd('setCurrentRangeAuto'), self._Cmd('setCurrentRange'), channel, wait)
                 
-    def fetchGenericValue(self, qryValue, channel=None):
-        """Perform a SCPI Query using qryValue command
+    def fetchGenericValue(self, qryValue, channel=None, query_delay=None):
+        """Perform a SCPI Query that expects a floating point value using qryValue command
         
-        qryValue - SCPI query command string to use to query the VALUE
-        channel  - number of the channel starting at 1
+        qryValue    - SCPI query command string to use to query the VALUE
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
         """
 
         # If a channel number is passed in, make it the
@@ -763,8 +810,41 @@ class SCPI(object):
             # If multi-channel device and channel parameter is passed, select it
             self._instWrite(self._Cmd('chanSelect').format(self.channel))
             
-        ret = self._instQuery(qryValue)
+        ret = self._instQuery(qryValue, delay=query_delay)
         return float(ret)
+    
+    def fetchGenericString(self, qryString, channel=None, query_delay=None):
+        """Perform a SCPI Query that expects a STRING returned using qryString command
+        
+        qryString   - SCPI query command string to use to query the STRING
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+            
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        ret = self._instQuery(qryString, delay=query_delay)
+        return ret
+    
+    def fetchGenericBoolean(self, qryBool, channel=None, query_delay=None):
+        """Perform a SCPI Query that expects a Boolean returned using qryBool command
+        
+        qryBool     - SCPI query command string to use to query the BOOLEAN
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        ret = self.fetchGenericString(qryBool, channel, query_delay)
+        return self._onORoff_1OR0_yesORno(ret)
     
     def queryVoltage(self, channel=None):
         """Return what voltage set value is (not the measured voltage,
@@ -778,7 +858,7 @@ class SCPI(object):
     def queryGenericRange(self, cmdAuto, cmdRange, channel=None):
         """Query the generic range for channel
 
-           cmdAuto  - SCPI command string to use to query if range is AUTO
+           cmdAuto  - SCPI command string to use to query if range is AUTO or None if no such command
            cmdRange - SCPI command string to use to query the RANGE
            channel  - number of the channel starting at 1
         """
@@ -788,10 +868,15 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
 
-        # First, query if AUTO is set and then query UPPER range setting
-        qry = cmdAuto.format(self.channel)
-        auto = self._instQuery(qry)
+        if (cmdAuto is not None):                
+            # First, query if AUTO is set (if cmdAuto is not None)
+            qry = cmdAuto.format(self.channel)
+            auto = self._instQuery(qry)
+        else:
+            # no cmdAuto so set auto to 0 to assume that it is off since no Auto
+            auto = '0'
         
+        # and then query UPPER range setting
         qry = cmdRange.format(self.channel)
         upper = self._instQuery(qry)
 
@@ -832,6 +917,44 @@ class SCPI(object):
 
         return self.queryGenericRange(self._Cmd('queryCurrentRangeAuto'), self._Cmd('queryCurrentRange'), channel)
             
+    def setMeasureFunction(self, function, channel=None, wait=None):
+        """Set the measure/sense function for the channel
+        
+           function - a string which names the function. common ones:
+                      VOLTage, CURRent, RESistance, POWer, VOLTage:AC, CURRent:AC,
+                      CAPacitance, TEMPerature, FREQuency, PERiod
+           wait     - number of seconds to wait after sending command
+           channel  - number of the channel starting at 1
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        if (self._max_chan > 1 and channel is not None):
+            # If multi-channel device and channel parameter is passed, select it
+            self._instWrite(self._Cmd('chanSelect').format(self.channel))
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+            
+        str = self._Cmd('setMeasureFunction').format(function)
+        self._instWrite(str)
+        sleep(wait)             # give some time for PS to respond
+        
+    def queryMeasureFunction(self, channel=None, query_delay=None):
+        """Return what FUNCTION is the current one for measuring/sensing
+        
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        return self.fetchGenericString(self._Cmd('queryMeasureFunction'), channel, query_delay)
+    
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
         
