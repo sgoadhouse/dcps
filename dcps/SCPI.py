@@ -597,6 +597,51 @@ class SCPI(object):
             
         sleep(wait)             # give some time for PS to respond
     
+    def setAsciiPrecision(self, value, wait=None):
+        """Set the digit precision of returned values in the ASCII
+           format. Keithley DMM6500 uses this but included in SCPI.py in
+           case future instruments use this same command.
+           NOTE: This value affects ALL channels.
+
+           value      - number of significant digits to return when using the default ASCII data format for returned values
+                        0 = Automatic                        
+                        value can also be "DEF" for default, "MAX" for maximum or "MIN" for minimum
+           wait       - number of seconds to wait after sending command
+
+        """
+                    
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'FORMat:ASCii:PRECision {}'.format(value)
+
+        #@@@#print('Format ASCII Precision String: {}'.format(str))
+
+        self._instWrite(str)
+
+        sleep(wait)             # give some time for device to respond
+
+    def queryAsciiPrecision(self, query_delay=None):
+        """Query the digit precision of returned values in the ASCII
+           format. Keithley DMM6500 uses this but included in SCPI.py in
+           case future instruments use this same command.
+           NOTE: This value affects ALL channels.
+
+           query_delay     - number of seconds to wait between sending command and waiting for response
+                             None uses the default
+
+        """
+                    
+        qryValue = 'FORMat:ASCii:PRECision?'
+
+        #@@@#print('Format ASCII Precision Query String: {}'.format(qryValue))
+
+        ret = self._instQuery(qryValue,delay=query_delay)
+        return int(ret)
+        
+        
     def setVoltage(self, voltage, channel=None, wait=None):
         """Set the voltage value for the channel
         
@@ -651,7 +696,8 @@ class SCPI(object):
             # Disable AUTO range and set the range to value
             str = cmdAuto.format(self.channel, 'OFF')
             self._instWrite(str)
-            str = cmdRange.format(self.channel, float(value))
+            #@@@#str = cmdRange.format(self.channel, float(value))
+            str = cmdRange.format(self.channel, value) # allow strings DEF/MIN/MAX
             self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -765,7 +811,7 @@ class SCPI(object):
 
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG:AUTO?'.format(self.channel)
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG?'.format(self.channel)
-        return self.queryGenericRange(self._Cmd('queryVoltageRangeAuto'), self._Cmd('queryVoltageRange'), channel=None)
+        return self.queryGenericRange(self._Cmd('queryVoltageRangeAuto'), self._Cmd('queryVoltageRange'), channel)
         
             
     def queryCurrent(self, channel=None):
@@ -784,7 +830,7 @@ class SCPI(object):
            channel  - number of the channel starting at 1
         """
 
-        return self.queryGenericRange(self._Cmd('queryCurrentRangeAuto'), self._Cmd('queryCurrentRange'), channel=None)
+        return self.queryGenericRange(self._Cmd('queryCurrentRangeAuto'), self._Cmd('queryCurrentRange'), channel)
             
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
@@ -830,7 +876,7 @@ class SCPI(object):
 
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG:AUTO?'.format(self.channel)
         #@@@#qry = 'SENS:VOLT:CHAN{:1d}:RANG?'.format(self.channel)
-        return self.queryGenericRange(self._Cmd('queryMeasureVoltageRangeAuto'), self._Cmd('queryMeasureVoltageRange'), channel=None)
+        return self.queryGenericRange(self._Cmd('queryMeasureVoltageRangeAuto'), self._Cmd('queryMeasureVoltageRange'), channel)
             
     def measureCurrent(self, channel=None):
         """Read and return a current measurement from channel
@@ -872,7 +918,7 @@ class SCPI(object):
            channel  - number of the channel starting at 1
         """
 
-        return self.queryGenericRange(self._Cmd('queryMeasureCurrentRangeAuto'), self._Cmd('queryMeasureCurrentRange'), channel=None)
+        return self.queryGenericRange(self._Cmd('queryMeasureCurrentRangeAuto'), self._Cmd('queryMeasureCurrentRange'), channel)
 
     def measureResistance(self, channel=None):
         """Read and return a resistance measurement from channel
