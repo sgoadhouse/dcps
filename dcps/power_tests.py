@@ -44,7 +44,7 @@ from os import environ, path
 from datetime import datetime
 from time import sleep
 
-PLOT = True
+PLOT = False
 if (PLOT):
     try:
         import matplotlib.pyplot as plt
@@ -434,7 +434,8 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,param):
     
     ## - Save all values
     header = ["Load (A)","VIN (V)","IIN (A)","VOUT (V)","IOUT (A)","Efficiency (%)"]
-    meta = {'circuit': circuit, 'test': 'Power Efficiency'}
+    #@@@#meta = {'circuit': circuit, 'test': 'Power Efficiency'}
+    meta = ['Power Efficiency', circuit]
     fnbase = "Eff_data_"+circuit
     # Use NPZ files which write in under a second instead of bulky csv files
     if False:
