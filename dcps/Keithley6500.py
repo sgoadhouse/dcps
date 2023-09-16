@@ -57,19 +57,19 @@ class Keithley6500(SCPI):
         verbosity - verbosity output - set to 0 for no debug output
         kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
         """
-        self._functions = { 'VoltageDC':   'VOLT',
+        self._functions = { 'VoltageDC':   'VOLT:DC',
                             'VoltageAC':   'VOLT:AC',
-                            'CurrentDC':   'CURR',
+                            'CurrentDC':   'CURR:DC',
                             'CurrentAC':   'CURR:AC',
                             'Resistance2W':'RES',
                             'Resistance4W':'FRES',
-                            'Diode':       'DIODe',
+                            'Diode':       'DIOD',
                             'Capacitance': 'CAP',
                             'Temperature': 'TEMP',
                             'Continuity':  'CONT',
-                            'Frequency':   'FREQ',
-                            'Period':      'PERiod',
-                            'VoltageRatio':'VOLT:RATio',
+                            'Frequency':   'FREQ:VOLT',
+                            'Period':      'PER:VOLT',
+                            'VoltageRatio':'VOLT:DC:RAT',
                            }
         # default measurement function if not supplied as parameter into the method
         self._functionStr = None
@@ -79,7 +79,38 @@ class Keithley6500(SCPI):
                                            read_termination = '\n',
                                            query_delay=0.01,
                                            **kwargs)
+    @property
+    def functions(self):
+        return self._functions
 
+    def _handleMeasureFunction(self,function,methodName,allowedCmdFunctions=None):
+        """Process the passed-in measure/sense function name and return the Funciton Command String to use"""
+
+        if (function is None):
+            # Ask the instrument what function is the current one
+            functionCmdStr = self.queryMeasureFunction()
+            functionPrint = functionCmdStr
+        else:
+            # Else, use the passed in function string
+            #
+            # Lookup function
+            functionCmdStr = self._functions.get(function)
+            functionPrint = function
+            if not functionCmdStr:
+                raise ValueError('{}: "{}" is an unknown function.'.format(methodName,functionPrint))
+
+        if (allowedCmdFunctions is not None):
+            ## if allowedCmdFunctions is not None, check to see if
+            ## functionCmdStr is listed. If not, it is not a supported
+            ## function for the method calling this.  Raise
+            ## ValueError() in that case.
+            if (functionCmdStr not in allowedCmdFunctions):
+                raise ValueError('{}: this method is invalid for function "{}".'.format(methodName,functionPrint))
+
+        #@@@#print("_handleMeasureFunction(): Measure Function Cmd String: " + functionCmdStr)
+            
+        return functionCmdStr
+        
     def setLocal(self):
         """Set the instrument to LOCAL mode where front panel keys
         work again. Also restore Continuous reading mode.
@@ -317,25 +348,9 @@ class Keithley6500(SCPI):
            wait       - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('setAutoZero(): "{}" is an unknown function.'.format(functionStr))
-
-        ## Not all Functions support setting AutoZero so raise
-        ## ValueError() if trying to set AutoZero for one of those.
-        allowedFunctions = ['VOLT','CURR','RES','FRES','DIODe','TEMP','VOLT:RATio',]
-        if (functionCmdStr not in allowedFunctions):
-            raise ValueError('setAutoZero(): Changing AutoZero is not valid for function "{}".'.format(functionStr))
-            
-        
+        functionCmdStr = self._handleMeasureFunction(function,"setAutoZero()",
+                                                     ['VOLT:DC','CURR:DC','RES','FRES','DIOD','TEMP','VOLT:DC:RAT',])
+                    
         # If a channel number is passed in, make it the
         # current channel
         if channel is not None:
@@ -391,18 +406,7 @@ class Keithley6500(SCPI):
            wait       - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('setRelativeOffset(): "{}" is an unknown function.'.format(functionStr))
-
+        functionCmdStr = self._handleMeasureFunction(function,"setRelativeOffset()")
                     
         # If a channel number is passed in, make it the
         # current channel
@@ -435,17 +439,7 @@ class Keithley6500(SCPI):
            wait       - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('queryRelativeOffset(): "{}" is an unknown function.'.format(functionStr))
+        functionCmdStr = self._handleMeasureFunction(function,"queryRelativeOffset()")
 
                     
         # If a channel number is passed in, make it the
@@ -478,17 +472,7 @@ class Keithley6500(SCPI):
            wait       - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('setRelativeOffsetState(): "{}" is an unknown function.'.format(functionStr))
+        functionCmdStr = self._handleMeasureFunction(function,"setRelativeOffsetState()")
 
                     
         # If a channel number is passed in, make it the
@@ -520,18 +504,7 @@ class Keithley6500(SCPI):
            wait       - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('setIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
-
+        functionCmdStr = self._handleMeasureFunction(function,"setIntegrationTime()")
                     
         # If a channel number is passed in, make it the
         # current channel
@@ -560,18 +533,7 @@ class Keithley6500(SCPI):
            wait       - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('queryIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
-
+        functionCmdStr = self._handleMeasureFunction(function,"queryIntegrationTime()")
                     
         # If a channel number is passed in, make it the
         # current channel
@@ -607,23 +569,8 @@ class Keithley6500(SCPI):
            wait     - number of seconds to wait after sending command
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('setIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
-
-        ## Not all Functions support setting Range so raise
-        ## ValueError() if trying to set Range for one of those.
-        allowedFunctions = ['VOLT','VOLT:AC','CURR','CURR:AC','RES','FRES','CAP','VOLT:RATio',]
-        if (functionCmdStr not in allowedFunctions):
-            raise ValueError('setMeasureRange(): Setting Range is not valid for function "{}".'.format(functionStr))
+        functionCmdStr = self._handleMeasureFunction(function,"setMeasureRange()",
+                                                     ['VOLT:DC','VOLT:AC','CURR:DC','CURR:AC','RES','FRES','CAP','VOLT:DC:RAT',])
         
         cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO {}'
         cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe {}'
@@ -641,23 +588,8 @@ class Keithley6500(SCPI):
            channel  - number of the channel starting at 1
         """
 
-        if (function is None):
-            # Use the, hopefully previously set, self._functionStr
-            functionStr = self._functionStr
-        else:
-            # Else, use the passed in function string
-            functionStr = function
-
-        # Lookup function
-        functionCmdStr = self._functions.get(functionStr)
-        if not functionCmdStr:
-            raise ValueError('queryIntegrationTime(): "{}" is an unknown function.'.format(functionStr))
-        
-        ## Not all Functions support querying Range so raise
-        ## ValueError() if trying to query Range for one of those.
-        allowedFunctions = ['VOLT','VOLT:AC','CURR','CURR:AC','RES','FRES','CAP','VOLT:RATio',]
-        if (functionCmdStr not in allowedFunctions):
-            raise ValueError('queryMeasureRange(): Querying Range is not valid for function "{}".'.format(functionStr))
+        functionCmdStr = self._handleMeasureFunction(function,"queryMeasureRange()",
+                                                     ['VOLT:DC','VOLT:AC','CURR:DC','CURR:AC','RES','FRES','CAP','VOLT:DC:RAT',])
 
         cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO?'
         cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe?'
@@ -828,11 +760,19 @@ if __name__ == '__main__':
 
     print(dmm.idn())
 
+
     ## set Remote Lock On
     dmm.setRemoteLock()
 
     dmm.beeperOff()
 
+    ## For determing the Functiona names output when querying the current function
+    #for i in range(0,14):
+    #    dmm.queryMeasureFunctionStr()
+    #    dmm.setLocal()
+    #    input("Press Enter to continue...") 
+    #    dmm.setRemoteLock()
+    
     # Set display messages
     dmm.setDisplayMessage('Bottom Message', top=False)
     dmm.setDisplayMessage('Top Message', top=True)
