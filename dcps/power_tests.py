@@ -44,17 +44,6 @@ from os import environ, path
 from datetime import datetime
 from time import sleep
 
-PLOT = False
-if (PLOT):
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        print('matplotlib.pyplot is needed for plotting waveform data to screen')
-        print('(very convenient). Please install it with "pip install matplotlib==3.6".\n')
-        print('If you do not want to install this very useful Python')
-        print('package, then change line "PLOT = True" to "PLOT = False" in')
-        print('this script')
-        exit(-1)
 
 #@@@#ftdi_url = 'ftdi://ftdi:4232h/1'
 ftdi_url_const = 'ftdi://ftdi:4232:FTK1RRYC/1'
@@ -97,33 +86,25 @@ def handleFilename(fname, ext, unique=True, timestamp=True):
     
     return fn
 
-def dataSaveCSV(filename, x, y, header=None, meta=None):
+def dataSaveCSV(filename, rows, header=None, meta=None):
     """
     filename - base filename to store the data
 
-    x        - indepedant data to write in first column
-
-    y        - vertical data: expected to be a list of columns to write and can be any number of columns
-
+    rows     - expected to be a list of columns to write and can be any number of columns
+               the first set of columns should be the indepedant variables
+    
     header   - a list of header strings, one for each column of data - set to None for no header
 
     meta     - a list of meta data for data - optional and not used by this function - only here to be like other dataSave functions
 
     """
 
-    nLength = len(x)
+    nLength = len(rows)
 
     #@@@#print('Writing data to CSV file "{}". Please wait...'.format(filename))
 
     # Save data values to CSV file.
-    # Determine iterator
-    if (isinstance(y[0],list) or isinstance(y[0],np.ndarray)):
-        # Multiple columns in y, so break them out
-        it = [[a,*b] for (a,b) in zip(x,y)]
-    else:
-        # Simply single column of y data
-        it = zip(x,y)
-
+    #
     # Open file for output. Only output x & y for simplicity. User
     # will have to copy paste the meta data printed to the
     # terminal
@@ -134,20 +115,19 @@ def dataSaveCSV(filename, x, y, header=None, meta=None):
         if header is not None:
             writer.writerow(header)
 
-        writer.writerows(it)
+        writer.writerows(rows)
 
     # return number of entries written
     return nLength
 
 
-def dataSaveNPZ(filename, x, y, header=None, meta=None):
+def dataSaveNPZ(filename, rows, header=None, meta=None):
     """
     filename - base filename to store the data
 
-    x        - indepedant data to write in first column
-
-    y        - vertical data: expected to be a list of columns to write and can be any number of columns
-
+    rows     - expected to be a list of columns to write and can be any number of columns
+               the first set of columns should be the indepedant variables
+    
     header   - a list of header strings, one for each column of data - set to None for no header
 
     meta     - a list of meta data for data
@@ -159,8 +139,7 @@ def dataSaveNPZ(filename, x, y, header=None, meta=None):
     header=None
     meta=None
     with np.load(filename) as data:
-        x = data['x']
-        y = data['y']
+        rows = data['rows']
         if 'header' in data.files:
             header = data['header']
         if 'meta' in data.files:
@@ -168,11 +147,11 @@ def dataSaveNPZ(filename, x, y, header=None, meta=None):
 
     """
 
-    nLength = len(x)
+    nLength = len(rows)
 
     #@@@#print('Writing data to Numpy NPZ file "{}". Please wait...'.format(filename))
 
-    arrays = {'x': x, 'y': y}
+    arrays = {'rows': rows}
     if (header is not None):
         arrays['header']=header
     if (meta is not None):
@@ -182,7 +161,7 @@ def dataSaveNPZ(filename, x, y, header=None, meta=None):
     # return number of entries written
     return nLength
 
-def poweron():
+def poweronOLD():
     """enable the power output on the BK9115 power supply.
     """
 
@@ -213,7 +192,7 @@ def poweron():
     
     bkps.close()
     
-def poweroff():
+def poweroffOLD():
     """Disable the BK 9115 DC power supply output.
     """
 
@@ -234,7 +213,7 @@ def poweroff():
     
     bkps.close()
 
-def setPowerValues(voltage,current,OVP=None,OCP=None):
+def setPowerValuesOLD(voltage,current,OVP=None,OCP=None):
     """Set the Voltage and Current values for the BK 9115 DC power supply output.
 
        voltage - floating point value to set voltage to
@@ -271,7 +250,31 @@ def setPowerValues(voltage,current,OVP=None,OCP=None):
 
     return (voltage, current)
 
-def measurePowerValues():
+def setPowerValues(ps, voltage,current,OVP=None,OCP=None):
+    """Set the Voltage and Current values for the power supply, ps
+
+       ps      - power supply object
+       voltage - floating point value to set voltage to
+       current - floating point value to set current to
+       OVP     - floating point value to set overvoltage protection to, or None to not set it
+       OCP     - floating point value to set overcurrent protection to, or None to not set it
+    """
+
+    ps.setVoltage(voltage)
+    ps.setCurrent(current)
+
+    if OVP is not None:
+        ps.setVoltageProtection(OVP, delay=0.010)
+        ps.voltageProtectionOn()
+
+    if OCP is not None:
+        ps.setCurrentProtection(OCP, delay=0.010)
+        ps.currentProtectionOn()
+
+    return measurePowerValues(ps)
+
+
+def measurePowerValuesOLD():
     """Measure the Voltage and Current values from the BK 9115 DC power supply output.
     """
 
@@ -297,6 +300,17 @@ def measurePowerValues():
 
     return (voltage, current)
 
+def measurePowerValues(ps):
+    """Measure the Voltage and Current values from the BK 9115 DC power supply output.
+    """
+
+    voltage = ps.measureVoltage()
+    current = ps.measureCurrent()
+    
+    #@@@#print('BK9115 Values:   {:6.4f} V  {:6.4f} A'.format(voltage,current))
+            
+    return (voltage, current)
+
 def instrumentInit(instr):
     # Reset
     instr.rst(wait=0.2)
@@ -312,6 +326,7 @@ def instrumentInit(instr):
 
 def instrumentStop(instr):
     instr.inputOff()
+    instr.outputOff()
     instr.beeperOn()
     #@@@#instr.printAllErrors()    
     #@@@#instr.cls()
@@ -319,23 +334,39 @@ def instrumentStop(instr):
     ## return to LOCAL mode
     instr.setLocal()
 
+def rangef(start, stop, step, ndigits):
+    """Return a floating point range from start to stop, INCLUSIVE, using step. The values in the returned list are rounded to ndigits digits
+    """
+    
+    n = int(round(((stop+step)-start)/step,0))
+    return [round(a,ndigits) for a in np.linspace(start,stop,n)]
+    #@@@#return [round(a,ndigits) for a in np.arange(round(start,ndigits),round(stop,ndigits)+round(step,ndigits),step)]
+    
+#@@@#def_vins = rangef(10.8,13.2,0.1,1) # 10.8V to 13.2V by 0.1V
+def_vins = rangef(11.4,11.6,0.1,1) # 11.4V to 11.6V by 0.1V @@@
+        
 @dataclass(frozen=True)
-class DCEfficiencyParam:
+class DCTestParam:
     upper: float                # upper output voltage so can set a range
+    max_iin: float              # maximum input current (for setting power supply)
+    ovp: float                  # value to set over voltage protection on power supply
+    ocp: float                  # value to set over current protection on power supply
+    vins: list                  # list of floats to set VIN (input voltage) to in sequence
+    vin_wait: float             # number of seconds to wait after changing the input voltage before measuring data
     loads: list                 # list of floats to set load to in sequence
     load_wait: float            # number of seconds to wait after changing load before measuring data
 
-DCEfficiencyParams = {
-    '1V8-A': DCEfficiencyParam(upper=2.0,loads=[a/10 for a in range(0,31)],load_wait=3.0), # load: step 0.1A for 0-3A
-    #@@@#'1V8-A': DCEfficiencyParam(upper=2.0,loads=[a/10 for a in range(0,31)],load_wait=0.5), # load: step 0.1A for 0-3A
+DCTestParams = {
+    #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(0,3.0,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
+    '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(1.0,1.2,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
 }
 
-def DCEfficiency(PTB,DMM,ELOAD,circuit,trials,param):
+def DCTest(PS,PTB,DMM,ELOAD,circuit,trials,param):
 
-    print("Testing DC Efficiency for '{}'".format(circuit))
+    print("Testing DC Characteristics by varying VIN and IOUT for '{}'".format(circuit))
     
     ## Make sure power supply is off at start
-    poweroff()
+    PS.outputOff()
 
     instrumentInit(DMM)
     instrumentInit(ELOAD)
@@ -355,13 +386,17 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,trials,param):
     ELOAD.setFunction('current')   # Constant Current
     ELOAD.setSenseState(True)      # Enable Sense inputs
 
-    ## Set for 12V / 5A with protections
-    setPowerValues(12.0,5,OVP=16.0,OCP=7.5)
-    poweron()
+    ## Set for the first VIN in the sequence. Use params for other parameters
+    setPowerValues(PS,param.vins[0],param.max_iin,OVP=param.ovp,OCP=param.ocp)
+    PS.outputOn()
     sleep(2)                    # give some time to settle
 
     # save the starting voltage and current
-    startValues = measurePowerValues() # voltage, current
+    #
+    # NOTE: Found that this varies by +/- 1 mA over 10.8V to 13.2V
+    # VIN. So it does not matter VIN when measure this. It is close
+    # enough for the expected range.
+    startValues = measurePowerValues(PS) # voltage, current
     
     print(' BK9115 Start Values:     {:6.4f} V  {:6.4f} A'.format(*startValues))
 
@@ -373,65 +408,67 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,trials,param):
 
     
     # save the baseline voltage and current
-    baseValues = measurePowerValues() # voltage, current
+    baseValues = measurePowerValues(PS) # voltage, current
     
     print(' BK9115 Baseline Values:  {:6.4f} V  {:6.4f} A'.format(*baseValues))
 
     ## Main Loop
-    ## - Enable/Disable Input of DL3031A and Set next current load
-    ## - measure BK9115 Voltage & Current
-    ## - subtract start current to get DC circuit current (estimated)
-    ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
-    ## - compute Power In / Power Out as a percentage
-    ## - Save all values to data[]
-
-    ## The indepedant variable will be a list with one per trial 
-    indep = []
+    ## - Set VIN to next in the sequence 
+    ##   - Enable/Disable Input of DL3031A and Set next current load
+    ##   - measure BK9115 Voltage & Current
+    ##   - subtract start current to get DC circuit current (estimated)
+    ##   - measure DMM9500 Voltage & DL3031A (E-Load) Current
+    ##   - compute Power In / Power Out as a percentage
+    ##   - Save all values to data[]
 
     ## data will be an array of tuples to save the data
     data = []
 
     for trial in range(0,trials):
-        for load in param.loads:
-            ## - Enable Input of DL3031A, if non-0 load, and Set next current load
-            if (load == 0):
-                ELOAD.inputOff()
-                sleep(param.load_wait)
-            else:
-                if (not ELOAD.isInputOn()):
-                    # If the Input is NOT enabled, then first set the load
-                    # value to make sure it is not too high from a
-                    # previous test. However, have noticed that sometimes
-                    # input will enable at a low current anyway and ignore
-                    # what it had been set to just recently. So still set
-                    # the current after enabling the input.
-                    ELOAD.setCurrent(load,wait=0.2)
-                    ELOAD.inputOn()
-                ELOAD.setCurrent(load,wait=param.load_wait)
+        for vin in param.vins:
+            # Change VIN to next in the sequence
+            setPowerValues(ps,vin,param.max_iin)
+            sleep(param.vin_wait)
 
-            ## - measure BK9115 Voltage & Current
-            (psVoltage, psCurrent) = measurePowerValues()
+            for load in param.loads:
+                ## - Enable Input of DL3031A, if non-0 load, and Set next current load
+                if (load == 0):
+                    ELOAD.inputOff()
+                    sleep(param.load_wait)
+                else:
+                    if (not ELOAD.isInputOn()):
+                        # If the Input is NOT enabled, then first set the load
+                        # value to make sure it is not too high from a
+                        # previous test. However, have noticed that sometimes
+                        # input will enable at a low current anyway and ignore
+                        # what it had been set to just recently. So still set
+                        # the current after enabling the input.
+                        ELOAD.setCurrent(load,wait=0.2)
+                        ELOAD.inputOn()
+                    ELOAD.setCurrent(load,wait=param.load_wait)
 
-            ## - subtract start current to get DC circuit current (estimated)
-            inVoltage = psVoltage
-            inCurrent = psCurrent - startValues[1]
+                ## - measure BK9115 Voltage & Current
+                (psVoltage, psCurrent) = measurePowerValues(PS)
 
-            ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
-            outVoltage = DMM.measureVoltage()
-            outCurrent = ELOAD.measureCurrent()
+                ## - subtract start current to get DC circuit current (estimated)
+                inVoltage = psVoltage
+                inCurrent = psCurrent - startValues[1]
 
-            ## - compute Power Out / Power In as a percentage
-            outPower = (outVoltage * outCurrent)
-            inPower  = (inVoltage * inCurrent)
-            efficiency = (outPower / inPower) * 100
+                ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
+                outVoltage = DMM.measureVoltage()
+                outCurrent = ELOAD.measureCurrent()
 
-            ## - Add values to indep/data
-            indep.append(load)
-            data.append([trial+1, inVoltage, inCurrent, outVoltage, outCurrent, efficiency])
+                ## - compute Power Out / Power In as a percentage
+                outPower = (outVoltage * outCurrent)
+                inPower  = (inVoltage * inCurrent)
+                efficiency = (outPower / inPower) * 100
 
-            print("   Trial: {:d} Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(trial+1, load, outPower, inPower, int(efficiency)))
+                ## - Add values to data
+                data.append([trial+1, vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
 
-            #@@@#input("Press Enter to continue...") 
+                print("   Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(trial+1, vin, load, outPower, inPower, int(efficiency)))
+
+                #@@@#input("Press Enter to continue...") 
 
     #@@@#print(data)
 
@@ -439,23 +476,17 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,trials,param):
     ELOAD.inputOff()
     
     ## - Save all values
-    header = ["Load (A)","Trial","VIN (V)","IIN (A)","VOUT (V)","IOUT (A)","Efficiency (%)"]
-    #@@@#meta = {'circuit': circuit, 'test': 'Power Efficiency'}
-    meta = ['Power Efficiency', circuit, trials]
-    fnbase = "Eff_data_{}_t{:02d}".format(circuit,trials)
+    header = ["Trial","Set VIN","Set Load","VIN (V)","IIN (A)","VOUT (V)","IOUT (A)","Efficiency (%)"]
+    meta = ['DC Test', circuit, trials]
+    fnbase = "DC_Test_{}_t{:02d}".format(circuit,trials)
     # Use NPZ files which write in under a second instead of bulky csv files
     if False:
         fn = handleFilename(fnbase, 'csv')
-        dataLen = dataSaveCSV(fn, indep, data, header, meta)
+        dataLen = dataSaveCSV(fn, data, header, meta)
     else:
         fn = handleFilename(fnbase, 'npz')
-        dataLen = dataSaveNPZ(fn, indep, data, header, meta)
+        dataLen = dataSaveNPZ(fn, data, header, meta)
     print("Data Output {} points to file {}".format(dataLen,fn))
-
-    #@@@#DCEfficiencyPlot(param.loads, data, 3, header, circuit)
-    
-    ## - Graph values and save graphs
-    ## @@@@
     
     ## Done - so turn off electronic load, board and power
     sleep(1)
@@ -466,25 +497,8 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,trials,param):
     PTB.powerEnable(PTB.circuits[circuit],False)
 
     sleep(1)
-    poweroff()
+    instrumentStop(PS)
     
-def DCEfficiencyPlot(x,data,col,header,circuit):
-    if (PLOT and (len(x) == len(data))):
-        print("Close the plot window to continue...")
-        fig, (ax1) = plt.subplots(1)
-        # create list of y from column col in data
-        y = [a[col] for a in data]
-        ax1.plot(x, y)      # plot the data
-        ax1.axvline(x=0.0, color='r', linestyle='--')
-        ax1.axhline(y=0.0, color='r', linestyle='--')
-        ax1.set_title('Effciency Data for {}'.format(circuit))
-        ax1.set_xlabel(header[0])
-        ax1.set_ylabel(header[col+1])
-        
-        fig.tight_layout()
-        plt.show()
-
-
 def check_positive(value):
     ivalue = int(value)
     if ivalue <= 0:
@@ -494,6 +508,7 @@ def check_positive(value):
 if __name__ == '__main__':
     #@@@#testmod(modules[__name__])
 
+    ps  = BK9115.BK9115(environ.get('BK9115_USB', 'USB0::INSTR'))
     ptb = PowerTestBoard.PowerTestBoard(environ.get('FTDI_DEVICE', ftdi_url_const))
     dmm = Keithley6500.Keithley6500(environ.get('DMM6500_VISA', 'TCPIP0::172.16.2.13::INSTR'))
     eload = RigolDL3000.RigolDL3000(environ.get('DL3000_VISA', 'TCPIP0::172.16.2.13::INSTR'))
@@ -514,7 +529,9 @@ if __name__ == '__main__':
 
     try:
         ## Make sure power supply is off at start
-        poweroff()
+        ps.open()
+        instrumentInit(ps)
+        ps.outputOff(channel=1)
 
         ## Open DMM and Eload
         dmm.open()
@@ -527,21 +544,21 @@ if __name__ == '__main__':
             circuit_list = ptb.circuits.keys()
         
         for circ in circuit_list:
-            if (args.dc_efficiency):
-                DCEfficiency(ptb, dmm, eload, circ, args.trials, DCEfficiencyParams[circ])
-            elif (args.line_regulation):
-                pass
-            elif (args.load_regulation):
-                pass
+            if (args.dc_efficiency or args.line_regulation or args.load_regulation):
+                ## All three tests collect the same data by varying
+                ## VIN and IOUT and collecting VIN, IIN, VOUT,
+                ## IOUT. This is all the data needed to plot the
+                ## desired results for these three tests and makes the
+                ## data more robust as it is collected over these
+                ## primary variables.
+                DCTest(ps, ptb, dmm, eload, circ, args.trials, DCTestParams[circ])
             else:
                 raise ValueError("A test was not selected with the command line arguments")
             
-        ## Make sure power supply is off at end
-        poweroff()
-
-        ## Close DMM and Eload
+        ## Close PS, DMM and Eload
         eload.close()
         dmm.close()
+        ps.close()
         
         #@@@#test_i2c_gpio()
 
