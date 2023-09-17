@@ -117,7 +117,7 @@ def dataSaveCSV(filename, x, y, header=None, meta=None):
 
     # Save data values to CSV file.
     # Determine iterator
-    if (isinstance(y[0],list)):
+    if (isinstance(y[0],list) or isinstance(y[0],np.ndarray)):
         # Multiple columns in y, so break them out
         it = [[a,*b] for (a,b) in zip(x,y)]
     else:
@@ -327,9 +327,10 @@ class DCEfficiencyParam:
 
 DCEfficiencyParams = {
     '1V8-A': DCEfficiencyParam(upper=2.0,loads=[a/10 for a in range(0,31)],load_wait=3.0), # load: step 0.1A for 0-3A
+    #@@@#'1V8-A': DCEfficiencyParam(upper=2.0,loads=[a/10 for a in range(0,31)],load_wait=0.5), # load: step 0.1A for 0-3A
 }
 
-def DCEfficiency(PTB,DMM,ELOAD,circuit,param):
+def DCEfficiency(PTB,DMM,ELOAD,circuit,trials,param):
 
     print("Testing DC Efficiency for '{}'".format(circuit))
     
@@ -384,48 +385,53 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,param):
     ## - compute Power In / Power Out as a percentage
     ## - Save all values to data[]
 
+    ## The indepedant variable will be a list with one per trial 
+    indep = []
+
     ## data will be an array of tuples to save the data
     data = []
 
-    for load in param.loads:
-        ## - Enable Input of DL3031A, if non-0 load, and Set next current load
-        if (load == 0):
-            ELOAD.inputOff()
-            sleep(param.load_wait)
-        else:
-            if (not ELOAD.isInputOn()):
-                # If the Input is NOT enabled, then first set the load
-                # value to make sure it is not too high from a
-                # previous test. However, have noticed that sometimes
-                # input will enable at a low current anyway and ignore
-                # what it had been set to just recently. So still set
-                # the current after enabling the input.
-                ELOAD.setCurrent(load,wait=0.2)
-                ELOAD.inputOn()
-            ELOAD.setCurrent(load,wait=param.load_wait)
+    for trial in range(0,trials):
+        for load in param.loads:
+            ## - Enable Input of DL3031A, if non-0 load, and Set next current load
+            if (load == 0):
+                ELOAD.inputOff()
+                sleep(param.load_wait)
+            else:
+                if (not ELOAD.isInputOn()):
+                    # If the Input is NOT enabled, then first set the load
+                    # value to make sure it is not too high from a
+                    # previous test. However, have noticed that sometimes
+                    # input will enable at a low current anyway and ignore
+                    # what it had been set to just recently. So still set
+                    # the current after enabling the input.
+                    ELOAD.setCurrent(load,wait=0.2)
+                    ELOAD.inputOn()
+                ELOAD.setCurrent(load,wait=param.load_wait)
 
-        ## - measure BK9115 Voltage & Current
-        (psVoltage, psCurrent) = measurePowerValues()
+            ## - measure BK9115 Voltage & Current
+            (psVoltage, psCurrent) = measurePowerValues()
 
-        ## - subtract start current to get DC circuit current (estimated)
-        inVoltage = psVoltage
-        inCurrent = psCurrent - startValues[1]
-        
-        ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
-        outVoltage = DMM.measureVoltage()
-        outCurrent = ELOAD.measureCurrent()
-        
-        ## - compute Power Out / Power In as a percentage
-        outPower = (outVoltage * outCurrent)
-        inPower  = (inVoltage * inCurrent)
-        efficiency = (outPower / inPower) * 100
-        
-        ## - Add values to data
-        data.append([inVoltage, inCurrent, outVoltage, outCurrent, efficiency])
+            ## - subtract start current to get DC circuit current (estimated)
+            inVoltage = psVoltage
+            inCurrent = psCurrent - startValues[1]
 
-        print("   Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(load, outPower, inPower, int(efficiency)))
-        
-        #@@@#input("Press Enter to continue...") 
+            ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
+            outVoltage = DMM.measureVoltage()
+            outCurrent = ELOAD.measureCurrent()
+
+            ## - compute Power Out / Power In as a percentage
+            outPower = (outVoltage * outCurrent)
+            inPower  = (inVoltage * inCurrent)
+            efficiency = (outPower / inPower) * 100
+
+            ## - Add values to indep/data
+            indep.append(load)
+            data.append([trial+1, inVoltage, inCurrent, outVoltage, outCurrent, efficiency])
+
+            print("   Trial: {:d} Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(trial+1, load, outPower, inPower, int(efficiency)))
+
+            #@@@#input("Press Enter to continue...") 
 
     #@@@#print(data)
 
@@ -433,17 +439,17 @@ def DCEfficiency(PTB,DMM,ELOAD,circuit,param):
     ELOAD.inputOff()
     
     ## - Save all values
-    header = ["Load (A)","VIN (V)","IIN (A)","VOUT (V)","IOUT (A)","Efficiency (%)"]
+    header = ["Load (A)","Trial","VIN (V)","IIN (A)","VOUT (V)","IOUT (A)","Efficiency (%)"]
     #@@@#meta = {'circuit': circuit, 'test': 'Power Efficiency'}
-    meta = ['Power Efficiency', circuit]
-    fnbase = "Eff_data_"+circuit
+    meta = ['Power Efficiency', circuit, trials]
+    fnbase = "Eff_data_{}_t{:02d}".format(circuit,trials)
     # Use NPZ files which write in under a second instead of bulky csv files
     if False:
         fn = handleFilename(fnbase, 'csv')
-        dataLen = dataSaveCSV(fn, param.loads, data, header, meta)
+        dataLen = dataSaveCSV(fn, indep, data, header, meta)
     else:
         fn = handleFilename(fnbase, 'npz')
-        dataLen = dataSaveNPZ(fn, param.loads, data, header, meta)
+        dataLen = dataSaveNPZ(fn, indep, data, header, meta)
     print("Data Output {} points to file {}".format(dataLen,fn))
 
     #@@@#DCEfficiencyPlot(param.loads, data, 3, header, circuit)
@@ -478,7 +484,13 @@ def DCEfficiencyPlot(x,data,col,header,circuit):
         fig.tight_layout()
         plt.show()
 
-        
+
+def check_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
 if __name__ == '__main__':
     #@@@#testmod(modules[__name__])
 
@@ -494,7 +506,8 @@ if __name__ == '__main__':
     mutex_grp.add_argument('-i', '--line_regulation', action='store_true', help='run the Line Regulation test')
     mutex_grp.add_argument('-o', '--load_regulation', action='store_true', help='run the Load Regulation test')
 
-
+    #@@@#parser.add_argument('-t', '--trials', action='store', type=check_positive, default=1, help='number of times to run the test')
+    parser.add_argument('-t', '--trials', metavar='trials', action='store', type=int, default=1, choices=range(1,21), help='number of times to run the test')
     parser.add_argument('list_of_circuits', metavar='circuits', type=ptb.validate_circuits, nargs='*', help='a list of circuits - or all if omitted')
     
     args = parser.parse_args()
@@ -515,7 +528,7 @@ if __name__ == '__main__':
         
         for circ in circuit_list:
             if (args.dc_efficiency):
-                DCEfficiency(ptb, dmm, eload, circ, DCEfficiencyParams[circ])
+                DCEfficiency(ptb, dmm, eload, circ, args.trials, DCEfficiencyParams[circ])
             elif (args.line_regulation):
                 pass
             elif (args.load_regulation):
