@@ -31,7 +31,11 @@ from dataclasses import dataclass
 import argparse
 
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import csv
+from scipy import interpolate
 
 from sys import modules, stdout, exit
 import logging
@@ -39,17 +43,6 @@ from os import environ, path
 from datetime import datetime
 from time import sleep
 
-PLOT = True
-if (PLOT):
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        print('matplotlib.pyplot is needed for plotting waveform data to screen')
-        print('(very convenient). Please install it with "pip install matplotlib==3.6".\n')
-        print('If you do not want to install this very useful Python')
-        print('package, then change line "PLOT = True" to "PLOT = False" in')
-        print('this script')
-        exit(-1)
 
 def handleFilename(fname, ext, unique=True, timestamp=True):
 
@@ -164,6 +157,30 @@ def dataLoadNPZ(filename):
     # return data
     return (x, y, header, meta)
 
+def data2Pandas(x, y, header, meta):
+
+    #@@@#print(x)
+    #print(y)
+    #print(type(y))
+    #print(type(y[0]))
+    #print(header)
+    
+    # Determine iterator
+    if (isinstance(y[0],list) or isinstance(y[0],np.ndarray)):
+        # Multiple columns in y, so break them out
+        data = [[a,*b] for (a,b) in zip(x,y)]
+    else:
+        # Simply single column of y data
+        data = list(zip(x,y))
+
+    #@@@#print(data)
+    
+    df = pd.DataFrame(data, columns=header)
+
+    #@@@#print(df)
+    return (df, meta)
+
+    
 @dataclass(frozen=True)
 class DCEfficiencyParam:
     upper: float                # upper output voltage so can set a range
@@ -174,17 +191,17 @@ DCEfficiencyParams = {
     '1V8-A': DCEfficiencyParam(upper=2.0,loads=[a/10 for a in range(0,31)],load_wait=3.0), # load: step 0.1A for 0-3A
 }
 
-def DCEfficiencyPlot(x,data,col,header,circuit):
-    if (PLOT and (len(x) == len(data))):
+def DCEfficiencyPlotOLD(x,data,col,header,circuit):
+    if (len(x) == len(data)):
         print("Close the plot window to continue...")
         fig, ax1 = plt.subplots()
         # create list of y from column col in data
         y = [a[col] for a in data]
-        print(x)
-        print(y)
-        ax1.plot(x, y)      # plot the data
-        ax1.axvline(x=0.0, color='r', linestyle='--')
-        ax1.axhline(y=0.0, color='r', linestyle='--')
+        #@@@#print(x)
+        #@@@#print(y)
+        ax1.plot(x, y, color='blue', ls='-', marker='.')      # plot the data
+        #@@@#ax1.axvline(x=0.0, color='r', linestyle='--')
+        #@@@#ax1.axhline(y=0.0, color='r', linestyle='--')
         ax1.set_title('Effciency Data for {}'.format(circuit))
         ax1.set_xlabel(header[0])
         ax1.set_ylabel(header[col+1])
@@ -192,6 +209,109 @@ def DCEfficiencyPlot(x,data,col,header,circuit):
         #@@@#fig.tight_layout()
         plt.show()
 
+def DCEfficiencyPlot(df,x,y,circuit,trials):
+    print("Close the plot window to continue...")
+
+    #@@@#print(df[x].values)
+    #@@@#print(df[y].values)
+    
+    # Apply the default theme
+    sns.set_theme()
+
+    if (True):
+        # Create a visualization
+        #@@@#sns.relplot(data=df,x=x, y=y)
+
+        #@@@#sns.lmplot(x=x, y=y, data=df, order=3, ci=None) #@@@#, scatter_kws={"s": 80})
+        #@@@#sns.lmplot(x=x, y=y, data=df, lowess=True, line_kws={"color": "C1"})
+        #@@@#sns.lineplot(data=df, x=x, y=y, markers=True, dashes=False, style="Trial", err_style = "band")
+        #@@@#sns.lineplot(data=df, x=x, y=y)
+        #@@@#sns.lineplot(data=df, x=x, y=y, orient="y")
+        #@@@#sns.lineplot(data=df, x=x, y=y, hue="Trial")
+        #@@@#sns.lineplot(data=df, x=x, y=y, markers=True, dashes=False, hue="Trial", style="Trial")
+
+        #@@@#df = df.sort_values(by=x)
+        
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', sort=True)
+        sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=0)
+
+    if (False):
+        xl = df[x].values[0:31]
+        yl = df[y].values[0:31]
+
+        poly = np.polyfit(xl,yl,5)
+        poly_y = np.poly1d(poly)(xl)
+        plt.plot(xl,poly_y)
+        plt.plot(xl,yl)
+
+    if (False):
+        xl = df[x].values[0:31]
+        yl = df[y].values[0:31]
+        #@@@#df = df.sort_values(by=x)
+        #@@@#xl = df[x].values
+        #@@@#yl = df[y].values
+
+        print(xl)
+        print(yl)
+        
+        tck,u     = interpolate.splprep( [xl,yl], s = 0 )
+        #@@@#xnew,ynew = interpolate.splev( np.linspace( 0, 1, 100 ), tck,der = 0)    
+        xnew,ynew = interpolate.splev( np.arange(0, 1.01, 0.01), tck)
+
+        #@@@#plt.plot( xl, yl, 'orange', xnew ,ynew )
+        plt.plot( xnew ,ynew, 'orange' )
+
+        
+    if (True):
+
+        # Delete rows where the 'Efficiency (%)'] < 40 since that throws off the spline generation
+        #@@@#df = df.drop(df[df['Load (A)'] == 0].index)
+        df = df.drop(df[df['Efficiency (%)'] < 40].index)
+
+        # Sort because that seems to be what interpolate needs
+        df = df.sort_values(by=x)
+        xl = df[x].values
+        yl = df[y].values
+        
+        #@@@#plt.figure()
+        bspl = interpolate.splrep(xl,yl,s=0.1*len(yl))
+        bspl_y = interpolate.splev(xl,bspl)
+        #@@@#plt.plot(xl,yl, 'orange', xl,bspl_y)
+        #@@@#plt.plot( xl , bspl_y, 'orange' )
+        #@@@#plt.plot( xl , bspl_y, 'blue' )
+        #@@@#plt.plot( xl , bspl_y, 'purple', alpha=0.7, linestyle='dashed')
+
+        # Insert a point 0,0 so line is complete)
+        plt.plot( np.insert(xl, 0, 0) , np.insert(bspl_y, 0, 0), 'C0')
+        
+    if (False):
+        import statsmodels.api as sm
+
+        #@@@#x = df[x].values[0:31]
+        #@@@#y = df[y].values[0:31]
+        df = df.sort_values(by=x)
+        xl = df[x].values
+        yl = df[y].values
+
+        print(xl)
+        print(yl)
+        
+        y_lowess = sm.nonparametric.lowess(yl, xl, frac = 0.20)  # 20 % lowess smoothing
+        plt.plot(xl, yl, 'orange', y_lowess[:, 0], y_lowess[:, 1])
+
+    if (False):
+        from scipy.signal import savgol_filter
+
+        df = df.sort_values(by=x)
+        xl = df[x].values
+        yl = df[y].values
+        
+        window = 21
+        order = 2
+        y_sf = savgol_filter(yl, window, order)
+        plt.plot(xl, y_sf)
+
+    plt.show()
         
 if __name__ == '__main__':
 
@@ -208,13 +328,22 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     try:
-        (x, y, header, meta) = dataLoadNPZ(args.filename)
+        #@@@#(x, y, header, meta) = dataLoadNPZ(args.filename)
+        (df, meta) = data2Pandas(*dataLoadNPZ(args.filename))
 
-        test = meta[0]
-        circ = meta[1]
+        test = None
+        circ = None
+        trials = None
         
+        if (len(meta) >= 1):
+            test = meta[0]
+        if (len(meta) >= 2):
+            circ = meta[1]
+        if (len(meta) >= 3):
+            trials = meta[2]
+
         if (test == "Power Efficiency"):
-            DCEfficiencyPlot(x,y,4,header,circ)
+            DCEfficiencyPlot(df,"Load (A)","Efficiency (%)",circ, trials)
         else:
             raise ValueError("Unknown test type '{}'".format(test))
             
