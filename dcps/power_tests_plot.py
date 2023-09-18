@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2017, Emmanuel Blot <emmanuel.blot@free.fr>
+# Copyright (c) 2023, Stephen Goadhouse <sdg@cern.ch>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -356,7 +356,9 @@ if __name__ == '__main__':
         if (len(meta) >= 2):
             circ = meta[1]
         if (len(meta) >= 3):
-            trials = meta[2]
+            boardName = meta[2]
+        if (len(meta) >= 4):
+            trials = meta[3]
             
         if (args.power_efficiency):
             DCEfficiencyPlot(df,"Set Load","Efficiency (%)",circ, trials)
