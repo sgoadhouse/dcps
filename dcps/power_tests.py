@@ -342,8 +342,8 @@ def rangef(start, stop, step, ndigits):
     return [round(a,ndigits) for a in np.linspace(start,stop,n)]
     #@@@#return [round(a,ndigits) for a in np.arange(round(start,ndigits),round(stop,ndigits)+round(step,ndigits),step)]
     
-#@@@#def_vins = rangef(10.8,13.2,0.1,1) # 10.8V to 13.2V by 0.1V
-def_vins = rangef(11.4,11.6,0.1,1) # 11.4V to 11.6V by 0.1V @@@
+def_vins = rangef(10.8,13.2,0.1,1) # 10.8V to 13.2V by 0.1V
+#@@@#def_vins = rangef(11.4,11.6,0.1,1) # 11.4V to 11.6V by 0.1V @@@
         
 @dataclass(frozen=True)
 class DCTestParam:
@@ -357,8 +357,8 @@ class DCTestParam:
     load_wait: float            # number of seconds to wait after changing load before measuring data
 
 DCTestParams = {
-    #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(0,3.0,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
-    '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(1.0,1.2,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
+    '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=2.5), # load: step 0.1A for 0-3A
+    #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(1.0,1.2,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
 }
 
 def DCTest(PS,PTB,DMM,ELOAD,circuit,trials,param):
@@ -424,61 +424,74 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,trials,param):
     ## data will be an array of tuples to save the data
     data = []
 
-    for trial in range(0,trials):
-        for vin in param.vins:
-            # Change VIN to next in the sequence
-            setPowerValues(ps,vin,param.max_iin)
-            sleep(param.vin_wait)
+    ## count number of trials
+    trialsDone = 0
+    
+    try:
+        for trial in range(0,trials):
+            for vin in param.vins:
+                # Change VIN to next in the sequence
+                setPowerValues(ps,vin,param.max_iin)
+                sleep(param.vin_wait)
 
-            for load in param.loads:
-                ## - Enable Input of DL3031A, if non-0 load, and Set next current load
-                if (load == 0):
-                    ELOAD.inputOff()
-                    sleep(param.load_wait)
-                else:
-                    if (not ELOAD.isInputOn()):
-                        # If the Input is NOT enabled, then first set the load
-                        # value to make sure it is not too high from a
-                        # previous test. However, have noticed that sometimes
-                        # input will enable at a low current anyway and ignore
-                        # what it had been set to just recently. So still set
-                        # the current after enabling the input.
-                        ELOAD.setCurrent(load,wait=0.2)
-                        ELOAD.inputOn()
-                    ELOAD.setCurrent(load,wait=param.load_wait)
+                for load in param.loads:
+                    ## - Enable Input of DL3031A, if non-0 load, and Set next current load
+                    if (load == 0):
+                        ELOAD.inputOff()
+                        sleep(param.load_wait)
+                    else:
+                        if (not ELOAD.isInputOn()):
+                            # If the Input is NOT enabled, then first set the load
+                            # value to make sure it is not too high from a
+                            # previous test. However, have noticed that sometimes
+                            # input will enable at a low current anyway and ignore
+                            # what it had been set to just recently. So still set
+                            # the current after enabling the input.
+                            ELOAD.setCurrent(load,wait=0.2)
+                            ELOAD.inputOn()
+                        ELOAD.setCurrent(load,wait=param.load_wait)
 
-                ## - measure BK9115 Voltage & Current
-                (psVoltage, psCurrent) = measurePowerValues(PS)
+                    ## - measure BK9115 Voltage & Current
+                    (psVoltage, psCurrent) = measurePowerValues(PS)
 
-                ## - subtract start current to get DC circuit current (estimated)
-                inVoltage = psVoltage
-                inCurrent = psCurrent - startValues[1]
+                    ## - subtract start current to get DC circuit current (estimated)
+                    inVoltage = psVoltage
+                    inCurrent = psCurrent - startValues[1]
 
-                ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
-                outVoltage = DMM.measureVoltage()
-                outCurrent = ELOAD.measureCurrent()
+                    ## - measure DMM9500 Voltage & DL3031A (E-Load) Current
+                    outVoltage = DMM.measureVoltage()
+                    outCurrent = ELOAD.measureCurrent()
 
-                ## - compute Power Out / Power In as a percentage
-                outPower = (outVoltage * outCurrent)
-                inPower  = (inVoltage * inCurrent)
-                efficiency = (outPower / inPower) * 100
+                    ## - compute Power Out / Power In as a percentage
+                    outPower = (outVoltage * outCurrent)
+                    inPower  = (inVoltage * inCurrent)
+                    efficiency = (outPower / inPower) * 100
 
-                ## - Add values to data
-                data.append([trial+1, vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
+                    ## - Add values to data
+                    data.append([trial+1, vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
+                    
+                    print("   Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(trial+1, vin, load, outPower, inPower, int(efficiency)))
 
-                print("   Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(trial+1, vin, load, outPower, inPower, int(efficiency)))
+                    #@@@#input("Press Enter to continue...")
 
-                #@@@#input("Press Enter to continue...") 
+            ## Indicate that the trial is complete
+            trialsDone += 1
+            print(" Trials Completed: {}".format(trialsDone))
 
+
+    except KeyboardInterrupt:
+        ## Use Ctrl-C to get out of test loop so can save data and return to close instruments
+        print("Saving collected data and shutting down instruments. Please Wait ...")
+        
     #@@@#print(data)
 
     ## Disable ELOAD
     ELOAD.inputOff()
     
     ## - Save all values
-    header = ["Trial","Set VIN","Set Load","VIN (V)","IIN (A)","VOUT (V)","IOUT (A)","Efficiency (%)"]
-    meta = ['DC Test', circuit, trials]
-    fnbase = "DC_Test_{}_t{:02d}".format(circuit,trials)
+    header = ["Trial","Set VIN","Set Load","VIN (V)","IIN (A)","PIN (W)","VOUT (V)","IOUT (A)","POUT (W)","Efficiency (%)"]
+    meta = ['DC Test', circuit, trialsDone]
+    fnbase = "DC_Test_{}_t{:02d}".format(circuit,trialsDone)
     # Use NPZ files which write in under a second instead of bulky csv files
     if False:
         fn = handleFilename(fnbase, 'csv')
@@ -527,58 +540,35 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
-    try:
-        ## Make sure power supply is off at start
-        ps.open()
-        instrumentInit(ps)
-        ps.outputOff(channel=1)
+    ## Make sure power supply is off at start
+    ps.open()
+    instrumentInit(ps)
+    ps.outputOff(channel=1)
 
-        ## Open DMM and Eload
-        dmm.open()
-        eload.open()
+    ## Open DMM and Eload
+    dmm.open()
+    eload.open()
 
-        circuit_list = args.list_of_circuits
+    circuit_list = args.list_of_circuits
 
-        # If no list given, then use all circuits
-        if len(circuit_list) <= 0:
-            circuit_list = ptb.circuits.keys()
-        
-        for circ in circuit_list:
-            if (args.dc_efficiency or args.line_regulation or args.load_regulation):
-                ## All three tests collect the same data by varying
-                ## VIN and IOUT and collecting VIN, IIN, VOUT,
-                ## IOUT. This is all the data needed to plot the
-                ## desired results for these three tests and makes the
-                ## data more robust as it is collected over these
-                ## primary variables.
-                DCTest(ps, ptb, dmm, eload, circ, args.trials, DCTestParams[circ])
-            else:
-                raise ValueError("A test was not selected with the command line arguments")
-            
-        ## Close PS, DMM and Eload
-        eload.close()
-        dmm.close()
-        ps.close()
-        
-        #@@@#test_i2c_gpio()
+    # If no list given, then use all circuits
+    if len(circuit_list) <= 0:
+        circuit_list = ptb.circuits.keys()
 
-        #powerEnable(0,0)
-        #powerEnable(1,0)
-        #powerEnable(2,0)
-        #powerEnable(3,0)
-    
-        #powerEnable(4,0)
-        #powerEnable(5,0)
-        #powerEnable(6,0)
-        #powerEnable(7,0)
-        
-        #powerEnable(8,0)
-        #powerEnable(9,0)
-        #powerEnable(10,0)
-        #powerEnable(11,0)
+    for circ in circuit_list:
+        if (args.dc_efficiency or args.line_regulation or args.load_regulation):
+            ## All three tests collect the same data by varying
+            ## VIN and IOUT and collecting VIN, IIN, VOUT,
+            ## IOUT. This is all the data needed to plot the
+            ## desired results for these three tests and makes the
+            ## data more robust as it is collected over these
+            ## primary variables.
+            DCTest(ps, ptb, dmm, eload, circ, args.trials, DCTestParams[circ])
+        else:
+            raise ValueError("A test was not selected with the command line arguments")
 
-    except KeyboardInterrupt:
-        ## Close DMM and Eload
-        dmm.close()
-        eload.close()
-        exit(2)
+    ## Close PS, DMM and Eload
+    eload.close()
+    dmm.close()
+    ps.close()
+
