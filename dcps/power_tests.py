@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2017, Emmanuel Blot <emmanuel.blot@free.fr>
+# Copyright (c) 2023, Stephen Goadhouse <sdg@cern.ch>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -361,7 +361,7 @@ DCTestParams = {
     #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(1.0,1.2,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
 }
 
-def DCTest(PS,PTB,DMM,ELOAD,circuit,trials,param):
+def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
 
     print("Testing DC Characteristics by varying VIN and IOUT for '{}'".format(circuit))
     
@@ -467,10 +467,10 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,trials,param):
                     inPower  = (inVoltage * inCurrent)
                     efficiency = (outPower / inPower) * 100
 
-                    ## - Add values to data
-                    data.append([trial+1, vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
+                    ## - Add values to data (ALSO UPDATE header BELOW)
+                    data.append([boardName, int(trial+1), vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
                     
-                    print("   Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(trial+1, vin, load, outPower, inPower, int(efficiency)))
+                    print("   Board: {} Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(boardName, trial+1, vin, load, outPower, inPower, int(efficiency)))
 
                     #@@@#input("Press Enter to continue...")
 
@@ -489,9 +489,9 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,trials,param):
     ELOAD.inputOff()
     
     ## - Save all values
-    header = ["Trial","Set VIN","Set Load","VIN (V)","IIN (A)","PIN (W)","VOUT (V)","IOUT (A)","POUT (W)","Efficiency (%)"]
-    meta = ['DC Test', circuit, trialsDone]
-    fnbase = "DC_Test_{}_t{:02d}".format(circuit,trialsDone)
+    header = ["Board","Trial","Set VIN","Set Load","VIN (V)","IIN (A)","PIN (W)","VOUT (V)","IOUT (A)","POUT (W)","Efficiency (%)"]
+    meta = ['DC Test', circuit, boardName, trialsDone]
+    fnbase = "DC_Test_{}_b{}_t{:02d}".format(circuit,boardName,trialsDone)
     # Use NPZ files which write in under a second instead of bulky csv files
     if False:
         fn = handleFilename(fnbase, 'csv')
@@ -536,6 +536,7 @@ if __name__ == '__main__':
 
     #@@@#parser.add_argument('-t', '--trials', action='store', type=check_positive, default=1, help='number of times to run the test')
     parser.add_argument('-t', '--trials', metavar='trials', action='store', type=int, default=1, choices=range(1,21), help='number of times to run the test')
+    parser.add_argument('-b', '--board_name', action='store', type=str, required=True, help='name of board under test')
     parser.add_argument('list_of_circuits', metavar='circuits', type=ptb.validate_circuits, nargs='*', help='a list of circuits - or all if omitted')
     
     args = parser.parse_args()
@@ -563,7 +564,7 @@ if __name__ == '__main__':
             ## desired results for these three tests and makes the
             ## data more robust as it is collected over these
             ## primary variables.
-            DCTest(ps, ptb, dmm, eload, circ, args.trials, DCTestParams[circ])
+            DCTest(ps, ptb, dmm, eload, circ, args.board_name, args.trials, DCTestParams[circ])
         else:
             raise ValueError("A test was not selected with the command line arguments")
 
