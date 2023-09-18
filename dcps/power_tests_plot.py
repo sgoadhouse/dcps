@@ -135,8 +135,7 @@ def dataLoadNPZ(filename):
     header=None
     meta=None
     with np.load(filename) as data:
-        x = data['x']
-        y = data['y']
+        rows = data['rows']
         if 'header' in data.files:
             header = data['header']
         if 'meta' in data.files:
@@ -147,17 +146,16 @@ def dataLoadNPZ(filename):
     header=None
     meta=None
     with np.load(filename,allow_pickle=False) as data:
-        x = data['x']
-        y = data['y']
+        rows = data['rows']
         if 'header' in data.files:
             header = data['header']
         if 'meta' in data.files:
             meta = data['meta']
     
     # return data
-    return (x, y, header, meta)
+    return (rows, header, meta)
 
-def data2Pandas(x, y, header, meta):
+def data2Pandas(rows, header, meta):
 
     #@@@#print(x)
     #print(y)
@@ -165,17 +163,9 @@ def data2Pandas(x, y, header, meta):
     #print(type(y[0]))
     #print(header)
     
-    # Determine iterator
-    if (isinstance(y[0],list) or isinstance(y[0],np.ndarray)):
-        # Multiple columns in y, so break them out
-        data = [[a,*b] for (a,b) in zip(x,y)]
-    else:
-        # Simply single column of y data
-        data = list(zip(x,y))
-
-    #@@@#print(data)
+    #@@@#print(rows)
     
-    df = pd.DataFrame(data, columns=header)
+    df = pd.DataFrame(rows, columns=header)
 
     #@@@#print(df)
     return (df, meta)
@@ -218,6 +208,8 @@ def DCEfficiencyPlot(df,x,y,circuit,trials):
     # Apply the default theme
     sns.set_theme()
 
+    interp = False
+    
     if (True):
         # Create a visualization
         #@@@#sns.relplot(data=df,x=x, y=y)
@@ -233,8 +225,25 @@ def DCEfficiencyPlot(df,x,y,circuit,trials):
         #@@@#df = df.sort_values(by=x)
         
         #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', sort=True)
-        sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=0)
+        
+        lw = 0 if interp else None
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=lw)
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=lw, hue="Set VIN")
 
+        #@@@#df1 = df.drop(df[df['Set VIN'] not in [10.8, 12.0, 13.2]].index)
+        #@@@#df1 = df.query("'Set VIN' == 10.8 | 'Set VIN' == 13.2")
+        df1 = df[ (df['Set VIN'] ==10.8) |
+                  (df['Set VIN'] == 11.4) |
+                  (df['Set VIN'] == 12.0) |
+                  (df['Set VIN'] == 12.6) |
+                  (df['Set VIN'] == 13.2)]
+
+        palette = sns.color_palette("hls",5)
+        sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set VIN", palette = palette)
+        plt.xlabel("Load (A)")
+        #@@@#plt.get_legend().set_title("title")
+        plt.legend().set_title("VIN (V)")
+        
     if (False):
         xl = df[x].values[0:31]
         yl = df[y].values[0:31]
@@ -262,11 +271,17 @@ def DCEfficiencyPlot(df,x,y,circuit,trials):
         plt.plot( xnew ,ynew, 'orange' )
 
         
-    if (True):
+    if (interp):
 
         # Delete rows where the 'Efficiency (%)'] < 40 since that throws off the spline generation
         #@@@#df = df.drop(df[df['Load (A)'] == 0].index)
         df = df.drop(df[df['Efficiency (%)'] < 40].index)
+        
+        # It appears that there is too much data or that sequentially
+        # it goes back and forth with changing of two variables. So
+        # remove all put data where VIN is set to the nominal value,
+        # 12.0.
+        df = df.drop(df[df['Set VIN'] != 12.0].index)
 
         # Sort because that seems to be what interpolate needs
         df = df.sort_values(by=x)
@@ -274,7 +289,8 @@ def DCEfficiencyPlot(df,x,y,circuit,trials):
         yl = df[y].values
         
         #@@@#plt.figure()
-        bspl = interpolate.splrep(xl,yl,s=0.1*len(yl))
+        #@@@#bspl = interpolate.splrep(xl,yl,s=0.1*len(yl))
+        bspl = interpolate.splrep(xl,yl,s=5)
         bspl_y = interpolate.splev(xl,bspl)
         #@@@#plt.plot(xl,yl, 'orange', xl,bspl_y)
         #@@@#plt.plot( xl , bspl_y, 'orange' )
@@ -318,10 +334,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Plot data from power tests on Power Test Board')
 
     # Mutuall Exclusive tests - pick one an donly one
-    #@@@#mutex_grp = parser.add_mutually_exclusive_group(required=True)
-    #mutex_grp.add_argument('-e', '--dc_efficiency',  action='store_true', help='run the DC Power Efficiency test')
-    #mutex_grp.add_argument('-i', '--line_regulation', action='store_true', help='run the Line Regulation test')
-    #mutex_grp.add_argument('-o', '--load_regulation', action='store_true', help='run the Load Regulation test')
+    mutex_grp = parser.add_mutually_exclusive_group(required=True)
+    mutex_grp.add_argument('-e', '--power_efficiency',  action='store_true', help='plot the Power Efficiency test data')
+    mutex_grp.add_argument('-i', '--line_regulation',   action='store_true', help='plot the Line Regulation test data')
+    mutex_grp.add_argument('-o', '--load_regulation',   action='store_true', help='plot the Load Regulation test data')
 
     parser.add_argument('filename', help='filename of NPZ datafile')
     
@@ -341,9 +357,9 @@ if __name__ == '__main__':
             circ = meta[1]
         if (len(meta) >= 3):
             trials = meta[2]
-
-        if (test == "Power Efficiency"):
-            DCEfficiencyPlot(df,"Load (A)","Efficiency (%)",circ, trials)
+            
+        if (args.power_efficiency):
+            DCEfficiencyPlot(df,"Set Load","Efficiency (%)",circ, trials)
         else:
             raise ValueError("Unknown test type '{}'".format(test))
             
