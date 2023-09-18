@@ -36,6 +36,7 @@ import Keithley6500
 import RigolDL3000
 
 import numpy as np
+import pandas as pd
 import csv
 
 from sys import modules, stdout, exit
@@ -159,6 +160,39 @@ def dataSaveNPZ(filename, rows, header=None, meta=None):
     np.savez(filename, **arrays)
 
     # return number of entries written
+    return nLength
+
+def dataSavePKL(filename, rows, header=None, meta=None):
+    """filename - base filename to store the data
+
+    rows     - expected to be a list of columns to write and can be any number of columns
+               the first set of columns should be the indepedant variables
+    
+    header   - a list of header strings, one for each column of data - set to None for no header
+
+    meta     - a list of meta data for data (NOT USED HERE)
+
+    A PKL, or pickle, file is a file used to store a Pandas
+    DataFrame. DataFrames allow different types of data in a single
+    row whereas numpy only allows a single type. So if add a string,
+    like boardName, ALL data becomes strings which explodes the file
+    size.
+    
+    To load and use the data from python:
+
+    import pandas as pd
+    df = pd.read_pickle("my_data.pkl")
+
+    """
+
+    nLength = len(rows)
+
+    #@@@#print('Writing data to DataFrames PKL file "{}". Please wait...'.format(filename))
+
+    df = pd.DataFrame(rows,columns=header)
+    df.to_pickle(filename)
+    
+    # return number of rows written
     return nLength
 
 def poweronOLD():
@@ -468,9 +502,10 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
                     efficiency = (outPower / inPower) * 100
 
                     ## - Add values to data (ALSO UPDATE header BELOW)
-                    data.append([boardName, int(trial+1), vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
+                    data.append([boardName, circuit, int(trial+1), vin, load, inVoltage, inCurrent, inPower, outVoltage, outCurrent, outPower, efficiency])
                     
-                    print("   Board: {} Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(boardName, trial+1, vin, load, outPower, inPower, int(efficiency)))
+                    print("   Board: {} DUT: {} Trial: {:d} VIN: {:.03f}V Load: {:.03f}A  Power: {:.03f}/{:.03f} W  Eff: {:d} %".format(
+                        boardName, circuit, trial+1, vin, load, outPower, inPower, int(efficiency)))
 
                     #@@@#input("Press Enter to continue...")
 
@@ -489,16 +524,19 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
     ELOAD.inputOff()
     
     ## - Save all values
-    header = ["Board","Trial","Set VIN","Set Load","VIN (V)","IIN (A)","PIN (W)","VOUT (V)","IOUT (A)","POUT (W)","Efficiency (%)"]
+    header = ["Board","Circuit","Trial","Set VIN","Set Load","VIN (V)","IIN (A)","PIN (W)","VOUT (V)","IOUT (A)","POUT (W)","Efficiency (%)"]
     meta = ['DC Test', circuit, boardName, trialsDone]
     fnbase = "DC_Test_{}_b{}_t{:02d}".format(circuit,boardName,trialsDone)
     # Use NPZ files which write in under a second instead of bulky csv files
     if False:
         fn = handleFilename(fnbase, 'csv')
         dataLen = dataSaveCSV(fn, data, header, meta)
-    else:
+    elif False:
         fn = handleFilename(fnbase, 'npz')
         dataLen = dataSaveNPZ(fn, data, header, meta)
+    else:
+        fn = handleFilename(fnbase, 'pkl')
+        dataLen = dataSavePKL(fn, data, header, meta)
     print("Data Output {} points to file {}".format(dataLen,fn))
     
     ## Done - so turn off electronic load, board and power

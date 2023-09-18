@@ -170,6 +170,27 @@ def data2Pandas(rows, header, meta):
     #@@@#print(df)
     return (df, meta)
 
+def dataLoadPKL(filename):
+    """
+    filename - pickle filename to load data
+
+    A PKL, or pickle, file is a file used to store a Pandas
+    DataFrame. DataFrames allow different types of data in a single
+    row whereas numpy only allows a single type. So if add a string,
+    like boardName, ALL data becomes strings which explodes the file
+    size.
+
+    To load and use the data from python:
+
+    import pandas as pd
+    df = pd.read_pickle("my_data.pkl")
+    """
+
+    df = pd.read_pickle(filename)
+    
+    # return data
+    return df
+
     
 @dataclass(frozen=True)
 class DCEfficiencyParam:
@@ -199,7 +220,7 @@ def DCEfficiencyPlotOLD(x,data,col,header,circuit):
         #@@@#fig.tight_layout()
         plt.show()
 
-def DCEfficiencyPlot(df,x,y,circuit,trials):
+def DCEfficiencyPlot(df,x,y):
     print("Close the plot window to continue...")
 
     #@@@#print(df[x].values)
@@ -344,27 +365,30 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     try:
-        #@@@#(x, y, header, meta) = dataLoadNPZ(args.filename)
-        (df, meta) = data2Pandas(*dataLoadNPZ(args.filename))
+        if False:
+            (df, meta) = data2Pandas(*dataLoadNPZ(args.filename))
 
-        test = None
-        circ = None
-        trials = None
+            test = None
+            circ = None
+            trials = None
         
-        if (len(meta) >= 1):
-            test = meta[0]
-        if (len(meta) >= 2):
-            circ = meta[1]
-        if (len(meta) >= 3):
-            boardName = meta[2]
-        if (len(meta) >= 4):
-            trials = meta[3]
+            if (len(meta) >= 1):
+                test = meta[0]
+            if (len(meta) >= 2):
+                circ = meta[1]
+            if (len(meta) >= 3):
+                boardName = meta[2]
+            if (len(meta) >= 4):
+                trials = meta[3]
+        else:
+            df = dataLoadPKL(args.filename)
             
         if (args.power_efficiency):
-            DCEfficiencyPlot(df,"Set Load","Efficiency (%)",circ, trials)
+            #@@@#DCEfficiencyPlot(df,"Set Load","Efficiency (%)",circ, trials)
+            DCEfficiencyPlot(df,"Set Load","Efficiency (%)")
         else:
             raise ValueError("Unknown test type '{}'".format(test))
-            
+        
 
     except KeyboardInterrupt:
         exit(2)
