@@ -33,6 +33,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter, NullFormatter, LogLocator
 import seaborn as sns
 import csv
 from scipy import interpolate
@@ -220,6 +221,25 @@ def DCEfficiencyPlotOLD(x,data,col,header,circuit):
         #@@@#fig.tight_layout()
         plt.show()
 
+@dataclass(frozen=True)
+class CircuitParam:
+    voutMin: float                # Minimum allowed output voltage (set horizontal line or a background gradient)
+    voutMax: float                # Maximum allowed output voltage (set horizontal line or a background gradient)
+    voutAbsMax: float             # Absolute Maximum VOUT
+    vinListEff: list              # list of VINs to plot on Efficiency
+    vinListLRg: list              # list of VINs to plot on Load Regulation)
+    iinList: list                 # list of IINs to plot (on Line Regulation)
+
+defVinList = vinList=[10.8, 11.4, 12.0, 12.6, 13.2]
+
+CircuitParams = {
+    '1V8-A': CircuitParam(voutMin=1.71,  voutMax=1.89,  voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+    '1V8-B': CircuitParam(voutMin=1.71,  voutMax=1.89,  voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]), # for FPGA which has tighter VOUT range
+    '1V8-D': CircuitParam(voutMin=1.71,  voutMax=1.89,  voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+}
+                          
+        
 def DCEfficiencyPlot(df,x,y):
     print("Close the plot window to continue...")
 
@@ -229,6 +249,10 @@ def DCEfficiencyPlot(df,x,y):
     # Apply the default theme
     sns.set_theme()
 
+    # Assume parameters to use with first row Circuit value
+    #@@@#print("Circuit: {}".format(df['Circuit'][0]))
+    params = CircuitParams[df['Circuit'][0]]
+    
     interp = False
     
     if (True):
@@ -253,13 +277,14 @@ def DCEfficiencyPlot(df,x,y):
 
         #@@@#df1 = df.drop(df[df['Set VIN'] not in [10.8, 12.0, 13.2]].index)
         #@@@#df1 = df.query("'Set VIN' == 10.8 | 'Set VIN' == 13.2")
-        df1 = df[ (df['Set VIN'] ==10.8) |
-                  (df['Set VIN'] == 11.4) |
-                  (df['Set VIN'] == 12.0) |
-                  (df['Set VIN'] == 12.6) |
-                  (df['Set VIN'] == 13.2)]
+        #df1 = df[ (df['Set VIN'] == 10.8) |
+        #          (df['Set VIN'] == 11.4) |
+        #          (df['Set VIN'] == 12.0) |
+        #          (df['Set VIN'] == 12.6) |
+        #          (df['Set VIN'] == 13.2)]
+        df1 = df[ (df['Set VIN'].isin(params.vinListEff)) ]
 
-        palette = sns.color_palette("hls",5)
+        palette = sns.color_palette("hls",len(params.vinListEff))
         sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set VIN", palette = palette)
         plt.xlabel("Load (A)")
         #@@@#plt.get_legend().set_title("title")
@@ -348,6 +373,204 @@ def DCEfficiencyPlot(df,x,y):
         y_sf = savgol_filter(yl, window, order)
         plt.plot(xl, y_sf)
 
+    #plt.xlabel("Input Voltage (V)")
+    #plt.ylabel("Output Voltage (V)")
+    plt.title("Efficiency")
+    plt.show()
+
+def LineRegulatonPlot(df,x,y):
+    """Plot VOUT vs VIN with a different color hue for a set of IOUT loads"""
+    
+    print("Close the plot window to continue...")
+
+    #@@@#print(df[x].values)
+    #@@@#print(df[y].values)
+    
+    # Apply the default theme
+    sns.set_theme()
+
+    # Assume parameters to use with first row Circuit value
+    #@@@#print("Circuit: {}".format(df['Circuit'][0]))
+    params = CircuitParams[df['Circuit'][0]]
+    
+    if (True):
+        # Create a visualization
+        #@@@#sns.relplot(data=df,x=x, y=y)
+
+        #@@@#sns.lmplot(x=x, y=y, data=df, order=3, ci=None) #@@@#, scatter_kws={"s": 80})
+        #@@@#sns.lmplot(x=x, y=y, data=df, lowess=True, line_kws={"color": "C1"})
+        #@@@#sns.lineplot(data=df, x=x, y=y, markers=True, dashes=False, style="Trial", err_style = "band")
+        #@@@#sns.lineplot(data=df, x=x, y=y)
+        #@@@#sns.lineplot(data=df, x=x, y=y, orient="y")
+        #@@@#sns.lineplot(data=df, x=x, y=y, hue="Trial")
+        #@@@#sns.lineplot(data=df, x=x, y=y, markers=True, dashes=False, hue="Trial", style="Trial")
+
+        #@@@#df = df.sort_values(by=x)
+        
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', sort=True)
+        
+        #@@@#lw = 0 if interp else None
+        lw = None
+        
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=lw)
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=lw, hue="Set VIN")
+
+        #@@@#df1 = df.drop(df[df['Set VIN'] not in [10.8, 12.0, 13.2]].index)
+        #@@@#df1 = df.query("'Set VIN' == 10.8 | 'Set VIN' == 13.2")
+
+        #df1 = df[ (df['Set Load'] == 0.5) |
+        #          (df['Set Load'] == 1.0) |
+        #          (df['Set Load'] == 1.5) |
+        #          (df['Set Load'] == 2.0) |
+        #          (df['Set Load'] == 2.5) |
+        #          (df['Set Load'] == 3.0)]
+        df1 = df[ (df['Set Load'].isin(params.iinList)) ]
+        
+        palette = sns.color_palette("hls",len(params.iinList))
+        sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set Load", palette = palette)
+        plt.xlabel("VIN (V)")
+        #@@@#plt.get_legend().set_title("title")
+        plt.legend().set_title("Load (A)")
+
+    ax = plt.gca()
+    #@@@#ax.set_ylim(ymin=1.79,ymax=1.81)
+
+    if (True):
+        ## Show a green band of valid VOUT
+        plt.axhspan(params.voutMin, params.voutMax, facecolor='lightgreen', alpha=0.25)
+        xlocs, xlabels = plt.xticks()
+        xmid = np.mean(xlocs)
+        #@@@#print(xlocs)
+        #@@@#print(xmid)
+        plt.text(xmid, params.voutMin, '{}'.format(params.voutMin), color='green', horizontalalignment='center', verticalalignment='bottom')
+        plt.text(xmid, params.voutMax, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
+        
+    plt.xlabel("Input Voltage (V)")
+    plt.ylabel("Output Voltage (V)")
+    plt.title("Line Regulation")
+    #@@@#ax.tick_params(axis="y", bottom=True, top=True, labelbottom=True, labeltop=True)
+    #@@@#print(plt.yticks())
+    plt.show()
+        
+
+
+## from https://stackoverflow.com/questions/44078409/how-to-display-all-minor-tick-marks-on-a-semi-log-plot    
+def restore_minor_ticks_log_plot(ax = None, n_subticks=9) -> None:
+    """For axes with a logrithmic scale where the span (max-min) exceeds
+    10 orders of magnitude, matplotlib will not set logarithmic minor ticks.
+    If you don't like this, call this function to restore minor ticks.
+
+    Args:
+        ax:
+        n_subticks: Number of Should be either 4 or 9.
+
+    Returns:
+        None
+    """
+    if ax is None:
+        ax = plt.gca()
+    # Method from SO user importanceofbeingernest at
+    # https://stackoverflow.com/a/44079725/5972175
+    locmaj = LogLocator(base=10, numticks=1000)
+    ax.xaxis.set_major_locator(locmaj)
+    locmin = LogLocator(
+        base=10.0, subs=np.linspace(0, 1.0, n_subticks + 2)[1:-1], numticks=1000
+    )
+    ax.xaxis.set_minor_locator(locmin)
+    ax.xaxis.set_minor_formatter(NullFormatter())
+    
+def LoadRegulatonPlot(df,x,y):
+    """Plot VOUT vs IOUT with a different color hue for a set of VINs"""
+
+    print("Close the plot window to continue...")
+
+    #@@@#print(df[x].values)
+    #@@@#print(df[y].values)
+    
+    # Apply the default theme
+    sns.set_theme()
+
+    # Assume parameters to use with first row Circuit value
+    #@@@#print("Circuit: {}".format(df['Circuit'][0]))
+    params = CircuitParams[df['Circuit'][0]]
+    
+    if (True):
+        # Create a visualization
+        #@@@#sns.relplot(data=df,x=x, y=y)
+
+        #@@@#sns.lmplot(x=x, y=y, data=df, order=3, ci=None) #@@@#, scatter_kws={"s": 80})
+        #@@@#sns.lmplot(x=x, y=y, data=df, lowess=True, line_kws={"color": "C1"})
+        #@@@#sns.lineplot(data=df, x=x, y=y, markers=True, dashes=False, style="Trial", err_style = "band")
+        #@@@#sns.lineplot(data=df, x=x, y=y)
+        #@@@#sns.lineplot(data=df, x=x, y=y, orient="y")
+        #@@@#sns.lineplot(data=df, x=x, y=y, hue="Trial")
+        #@@@#sns.lineplot(data=df, x=x, y=y, markers=True, dashes=False, hue="Trial", style="Trial")
+
+        #@@@#df = df.sort_values(by=x)
+        
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', sort=True)
+        
+        #@@@#lw = 0 if interp else None
+        lw = None
+        
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=lw)
+        #@@@#sns.lineplot(data=df, x=x, y=y, marker='o', linewidth=lw, hue="Set VIN")
+
+        #@@@#df1 = df.drop(df[df['Set VIN'] not in [10.8, 12.0, 13.2]].index)
+        #@@@#df1 = df.query("'Set VIN' == 10.8 | 'Set VIN' == 13.2")
+
+        df1 = df[ (df['Set VIN'].isin(params.vinListLRg)) ]
+        
+        palette = sns.color_palette("hls",len(params.vinListLRg))
+        sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set VIN", palette = palette)
+        plt.xlabel("Load (A)")
+        #@@@#plt.get_legend().set_title("title")
+        plt.legend().set_title("VIN (V)")
+
+    # Use a logarithmic scale for X axis
+    plt.xscale("log")
+    #plt.xticks([.01, .02, .03, .04, .05, .06, .07, .08 ,.09,.1, .2, .3, .4, .5, .6, .7, .8 ,.9,1,2,3])
+    maxIin = int(np.ceil(params.iinList[-1]))
+    xticks = list(np.linspace(1,9, 9)*1e-2)+list(np.linspace(1,9, 9)*1e-1)+list(np.linspace(1,maxIin,maxIin))
+    print(xticks)
+    plt.xticks(xticks)
+    #@@@#plt.xticklabels([0.01, 0.1, 1])
+
+    ax = plt.gca()
+    #ax.set_xscale("log")
+    #@@@#ax.axis(xmin=0.01, xmax=10)
+    #restore_minor_ticks_log_plot(ax)
+    #ax.xaxis.get_major_locator().set_params(numticks=99)
+    #ax.xaxis.get_minor_locator().set_params(numticks=99, subs=[.2, .4, .6, .8])
+    #ax.xaxis.set_major_locator(LogLocator(numticks=9999))
+    #ax.xaxis.set_minor_locator(LogLocator(numticks=9999, subs="auto"))
+
+    n = 9  # Keeps every 9th label
+    [l.set_visible(False) for (i,l) in enumerate(ax.xaxis.get_ticklabels()) if i % n != 0]
+    
+    formatter = FuncFormatter(lambda x, _: '{:.16g}'.format(x))
+    ax.xaxis.set_major_formatter(formatter)
+    
+    #@@@#ax.set_ylim(ymin=1.79,ymax=1.81)
+
+    if (True):
+        ## Show a green band of valid VOUT
+        plt.axhspan(params.voutMin, params.voutMax, facecolor='lightgreen', alpha=0.25)
+        xlocs, xlabels = plt.xticks()
+        #@@@#xmid = (xlocs[0] + xlocs[-1])/2
+        #@@@#xmid = xlocs[((len(xlocs)+1)//2)]
+        #@@@#xmid = np.log10(np.mean(10 ** xlocs))
+        xmid = 10 ** np.mean(np.log10(xlocs))
+        #@@@#print(xlocs)
+        #@@@#print(xmid)
+        plt.text(xmid, params.voutMin, '{}'.format(params.voutMin), color='green', horizontalalignment='center', verticalalignment='bottom')
+        plt.text(xmid, params.voutMax, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
+        
+    plt.xlabel("Load (A)")
+    plt.ylabel("Output Voltage (V)")
+    plt.title("Line Regulation")
+    #@@@#ax.tick_params(axis="y", bottom=True, top=True, labelbottom=True, labeltop=True)
+    #@@@#print(plt.yticks())
     plt.show()
         
 if __name__ == '__main__':
@@ -386,6 +609,10 @@ if __name__ == '__main__':
         if (args.power_efficiency):
             #@@@#DCEfficiencyPlot(df,"Set Load","Efficiency (%)",circ, trials)
             DCEfficiencyPlot(df,"Set Load","Efficiency (%)")
+        elif (args.line_regulation):
+            LineRegulatonPlot(df,"Set VIN","VOUT (V)")
+        elif (args.load_regulation):
+            LoadRegulatonPlot(df,"Set Load","VOUT (V)")
         else:
             raise ValueError("Unknown test type '{}'".format(test))
         
