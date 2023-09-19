@@ -390,9 +390,14 @@ class DCTestParam:
     loads: list                 # list of floats to set load to in sequence
     load_wait: float            # number of seconds to wait after changing load before measuring data
 
+## For 1V8-A circuit, looked at VOUT and IMON on oscilloscope and
+## waiting 1.5s vs 2.5s after change the load does not seem to make a
+## difference when it is best to sample all data. So go with the
+## quicker option to speed up testing which can take 45 min for a
+## single trial.
 DCTestParams = {
-    '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=2.5), # load: step 0.1A for 0-3A
-    #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=3.0,loads=rangef(1.0,1.2,0.1,1),load_wait=3.0), # load: step 0.1A for 0-3A
+    '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=1.5), # load: step 0.1A for 0-3A
+    #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,3.0,0.1,2.0,0.2,2.5,0.3,1.0,0],load_wait=2.5), # load: step 0.1A for 0-3A
 }
 
 def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
@@ -419,6 +424,10 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
     ELOAD.inputOff()    
     ELOAD.setFunction('current')   # Constant Current
     ELOAD.setSenseState(True)      # Enable Sense inputs
+    ELOAD.setImonExt(True)         # Enable the IMON_EXT output
+    ELOAD.setDigitalOutput(left=True,count=2) # Enable the Digital output in ON/OFF mode
+
+    #@@@#input("Press Enter to continue...") 
 
     ## Set for the first VIN in the sequence. Use params for other parameters
     setPowerValues(PS,param.vins[0],param.max_iin,OVP=param.ovp,OCP=param.ocp)
@@ -474,6 +483,7 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
                         ELOAD.inputOff()
                         sleep(param.load_wait)
                     else:
+                        #@@@#ELOAD.inputOff() # @@@ for DEBUG so can trigger on Digital Output
                         if (not ELOAD.isInputOn()):
                             # If the Input is NOT enabled, then first set the load
                             # value to make sure it is not too high from a
@@ -483,8 +493,9 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
                             # the current after enabling the input.
                             ELOAD.setCurrent(load,wait=0.2)
                             ELOAD.inputOn()
-                        ELOAD.setCurrent(load,wait=param.load_wait)
-
+                        ELOAD.setCurrent(load)
+                        sleep(param.load_wait)
+                        
                     ## - measure BK9115 Voltage & Current
                     (psVoltage, psCurrent) = measurePowerValues(PS)
 
