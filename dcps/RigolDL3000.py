@@ -93,7 +93,7 @@ class RigolDL3000(SCPI):
 
         # enable Virtual Front Panel
         self._instWrite('DEBug:KEY 1')
-        sleep(1.0)
+        sleep(0.5)
         k = 8 # Press Local key
         self._instWrite('SYSTem:KEY {}'.format(k))
 
@@ -129,6 +129,82 @@ class RigolDL3000(SCPI):
     # Commands Specific to DL3000
     ###################################################################
 
+    def setImonExt(self,on):
+        """Enable the IMON External output. After a *RST this is
+        disabled. Could not find a command that sets this so having to
+        use the KEY command and hope it is right since there is no
+        feedback.
+
+        """
+
+        #@@@#print("ImonExt")
+        
+        # enable Virtual Front Panel
+        self._instWrite('DEBug:KEY 1')
+        sleep(0.3)
+        self._instWrite('SYSTem:KEY {}'.format(9))  # Utiliity
+
+        for i in range(7):
+            # Send 7 Down Arrows
+            self._instWrite('SYSTem:KEY {}'.format(40)) # Down Arrow
+
+        if (on):
+            # If turning ON, must assume this is being called AFTER a *RST or when it is known to be OFF
+            # Use Left Arrow to Enable it
+            self._instWrite('SYSTem:KEY {}'.format(37)) # Left Arrow
+        else:
+            # If turning OFF, assume that it must be ON (no feedback so must do it this way)
+            # Use Right Arrow to Enable it
+            self._instWrite('SYSTem:KEY {}'.format(38)) # Right Arrow
+
+        # Give time for someone to see this, if they are interested
+        sleep(1.0)
+            
+        # Leave utility menu by "pressing" the key again
+        self._instWrite('SYSTem:KEY {}'.format(9))  # Utiliity
+
+        # disable Virtual Front Panel
+        self._instWrite('DEBug:KEY 0')
+
+    def setDigitalOutput(self,left,count):
+        """Enable the Digital output. After a *RST this is
+        disabled. Could not find a command that sets this so having to
+        use the KEY command and hope it is right since there is no
+        feedback.
+
+        left  - True/False: if True, use Left Arrow, if False use Right Arrow
+        count - number of Left or Right arrows
+        """
+
+        #@@@#print("Digital Output")
+        
+        # enable Virtual Front Panel
+        self._instWrite('DEBug:KEY 1')
+        sleep(0.3)
+        self._instWrite('SYSTem:KEY {}'.format(9))  # Utiliity
+
+        for i in range(4):
+            # Send 4 Down Arrows
+            self._instWrite('SYSTem:KEY {}'.format(40)) # Down Arrow
+
+        for i in range(count):            
+            if (left):
+                # using Left Arrow - the caller has to keep track of the position since this function cannot query it
+                self._instWrite('SYSTem:KEY {}'.format(37)) # Left Arrow            
+            else:
+                # using Right Arrow - the caller has to keep track of the position since this function cannot query it
+                self._instWrite('SYSTem:KEY {}'.format(38)) # Right Arrow
+
+        # Give time for someone to see this, if they are interested
+        sleep(1.0)
+            
+        # Leave utility menu by "pressing" the key again
+        self._instWrite('SYSTem:KEY {}'.format(9))  # Utiliity
+
+        # disable Virtual Front Panel
+        self._instWrite('DEBug:KEY 0')
+        
+    
     def setCurrentVON(self,voltage,wait=None):
         """Set the voltage level for when in Constant Current mode that the load starts to sink.
 
