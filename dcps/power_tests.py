@@ -398,6 +398,7 @@ def rangef(start, stop, step, ndigits, extra=None, sort=True):
 #@@@#def_vins = rangef(10.8,13.2,0.2,1) # 10.8V to 13.2V by 0.2V
 #@@@#def_vins = list(np.sort([11.9,12.1]+rangef(10.8,13.2,0.2,1))) # 10.8V to 13.2V by 0.2V + 11.9 + 12.1 (in order)
 #@@@#def_vins = list(np.sort([11.9,12.1]+rangef(10.8,13.2,0.3,1))) # 10.8V to 13.2V by 0.3V + 11.9 + 12.1 (sorted)
+#@@@#def_vins = [10.8,11.1,11.4,11.7,11.9,12.0,12.1,12.3,12.6,12.9,13.2] # 10.8V to 13.2V by 0.3V + 11.9 + 12.1 (sorted)
 def_vins = rangef(10.8,13.2,0.3,1,[11.9,12.1]) # 10.8V to 13.2V by 0.3V + 11.9 + 12.1 (sorted)
 #@@@#def_vins = rangef(11.4,11.6,0.1,1) # 11.4V to 11.6V by 0.1V @@@
         
@@ -421,12 +422,26 @@ DCTestParams = {
     '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=1.5), # load: step 0.1A for 0-3A
     #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,3.0,0.1,2.0,0.2,2.5,0.3,1.0,0],load_wait=2.5), # load: step 0.1A for 0-3A
     '1V8-B': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=1.5), # load: step 0.1A for 0-3A
-    '1V8-C': DCTestParam(upper=2.0,max_iin=5.0,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,loads=[0,0.025,0.05,0.075,0.1]+rangef(0.25,6.0,0.25,2),load_wait=1.5), # load: step 0.1A for 0-3A
+    '1V8-C': DCTestParam(upper=2.0,max_iin=5.0,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,loads=[0,0.025,0.05,0.075,0.1]+rangef(0.25,6.0,0.25,2),load_wait=1.5), # load: step 0.25A for 0-6A
+    '1V8-D': DCTestParam(upper=2.0,max_iin=5.0,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=1.5), # load: step 0.1A for 0-3A
+
+    '3V3-A':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,3.0,0.25,2),load_wait=1.5), # load: progressive to 3A
+    '3V3-B':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,2.5,0.25,2),load_wait=1.5), # load: progressive to 2.5A
+    '3V75-B': DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,2.5,0.25,2),load_wait=1.5), # load: progressive to 2.5A
+    '3V3-C':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,3.0,0.25,2),load_wait=1.5), # load: progressive to 3A
+    #@@@#'3V3-D':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,10.0,1,1),load_wait=1.5), # load: progressive to 10A
 }
+
 
 def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
 
     print("Testing DC Characteristics by varying VIN and IOUT for '{}'".format(circuit))
+
+    # If testing special circuit, 3V75-B and 3V3-B, remind user to flip the switch as they need
+    if (circuit == "3V3-B"):
+        print("\n DOUBLE CHECK that SW3 is switched toward '3.75V' [switch is backwards]\n")
+    elif circuit == "3V75-B"):
+        print("\n DOUBLE CHECK that SW3 is switched toward '3.3V' [switch is backwards]\n")
     
     ## Make sure power supply is off at start
     PS.outputOff()

@@ -224,8 +224,8 @@ class CircuitParam:
     voutMax: float                # Maximum allowed output voltage (set horizontal line or a background gradient)
     voutAbsMax: float             # Absolute Maximum VOUT
     vinListEff: list              # list of VINs to plot on Efficiency
-    vinListLRg: list              # list of VINs to plot on Line Regulations
-    ioutList: list                # list of IOUTs to plot on Load Regulation
+    vinListLRg: list              # list of VINs to plot on Load Regulations
+    ioutList: list                # list of IOUTs to plot on Line Regulation
 
 defVinList = vinList=[10.8, 11.4, 12.0, 12.6, 13.2]
 minVolt1v8 = 1.71
@@ -235,10 +235,19 @@ maxFpga1v8 = 1.854
 
 CircuitParams = {
     ## FPGA 1.8V has a tighter voltage range: 1.746V - 1.854V, but everything else is 1.71V to 1.89V. To better compare, use the FPGA range
-    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
-    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
-    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=[12.0], ioutList=rangef(0.5,6.0,0.5,1)),
-    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),  ###rangef(0.5,6.0,0.5,1)),
+    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+
+    ## FireFly and ELM want 3.15V to 3.45V range but clocks and SSD are fine with 3.135V to 3.465V, so set to 3.15 to 3.45
+    '3V3-A':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '3V3-B':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
+    '3V75-B': CircuitParam(voutMin=3.60, voutMax=3.90, voutAbsMax=4.5, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
+    '3V3-C':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]),
+
+
 }
                           
         
@@ -574,7 +583,7 @@ def LoadRegulatonPlot(df,x,y):
         
     plt.xlabel("Load (A)")
     plt.ylabel("Output Voltage (V)")
-    plt.title("Line Regulation")
+    plt.title("Load Regulation")
     #@@@#ax.tick_params(axis="y", bottom=True, top=True, labelbottom=True, labeltop=True)
     #@@@#print(plt.yticks())
     plt.show()
