@@ -368,15 +368,37 @@ def instrumentStop(instr):
     ## return to LOCAL mode
     instr.setLocal()
 
-def rangef(start, stop, step, ndigits):
+def rangef(start, stop, step, ndigits, extra=None, sort=True):
     """Return a floating point range from start to stop, INCLUSIVE, using step. The values in the returned list are rounded to ndigits digits
     """
     
     n = int(round(((stop+step)-start)/step,0))
-    return [round(a,ndigits) for a in np.linspace(start,stop,n)]
+    lst = [round(a,ndigits) for a in np.linspace(start,stop,n)]
+    
+    if (extra is not None):
+        ## Insert these values
+        if isinstance(extra,int) or isinstance(extra,float):
+            ## if extra is a single value, add it to list appropriately
+            lst = [extra]+lst
+        elif isinstance(extra,list):
+            ## extra is a list so simply add it
+            lst = extra+lst
+        else:
+            ## do not know how to handle this type
+            raise ValueError("rangef(): Incorrect type for 'extra' parameter: {}".format(type(extra)))
+        
+    if sort:
+        ## Sort values
+        lst.sort()
+        
+    return lst
     #@@@#return [round(a,ndigits) for a in np.arange(round(start,ndigits),round(stop,ndigits)+round(step,ndigits),step)]
     
-def_vins = rangef(10.8,13.2,0.1,1) # 10.8V to 13.2V by 0.1V
+#@@@#def_vins = rangef(10.8,13.2,0.1,1) # 10.8V to 13.2V by 0.1V
+#@@@#def_vins = rangef(10.8,13.2,0.2,1) # 10.8V to 13.2V by 0.2V
+#@@@#def_vins = list(np.sort([11.9,12.1]+rangef(10.8,13.2,0.2,1))) # 10.8V to 13.2V by 0.2V + 11.9 + 12.1 (in order)
+#@@@#def_vins = list(np.sort([11.9,12.1]+rangef(10.8,13.2,0.3,1))) # 10.8V to 13.2V by 0.3V + 11.9 + 12.1 (sorted)
+def_vins = rangef(10.8,13.2,0.3,1,[11.9,12.1]) # 10.8V to 13.2V by 0.3V + 11.9 + 12.1 (sorted)
 #@@@#def_vins = rangef(11.4,11.6,0.1,1) # 11.4V to 11.6V by 0.1V @@@
         
 @dataclass(frozen=True)
@@ -398,6 +420,8 @@ class DCTestParam:
 DCTestParams = {
     '1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=1.5), # load: step 0.1A for 0-3A
     #@@@#'1V8-A': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,3.0,0.1,2.0,0.2,2.5,0.3,1.0,0],load_wait=2.5), # load: step 0.1A for 0-3A
+    '1V8-B': DCTestParam(upper=2.0,max_iin=5.1,ovp=16.1,ocp=7.5,vins=def_vins,vin_wait=2.5,loads=[0,0.02,0.04,0.06,0.08]+rangef(0.1,3.0,0.1,1),load_wait=1.5), # load: step 0.1A for 0-3A
+    '1V8-C': DCTestParam(upper=2.0,max_iin=5.0,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,loads=[0,0.025,0.05,0.075,0.1]+rangef(0.25,6.0,0.25,2),load_wait=1.5), # load: step 0.1A for 0-3A
 }
 
 def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
@@ -528,7 +552,11 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
     except KeyboardInterrupt:
         ## Use Ctrl-C to get out of test loop so can save data and return to close instruments
         print("Saving collected data and shutting down instruments. Please Wait ...")
-        
+
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        print("Saving collected data and shutting down instruments. Please Wait ...")
+    
     #@@@#print(data)
 
     ## Disable ELOAD
