@@ -192,34 +192,31 @@ def dataLoadPKL(filename):
     # return data
     return df
 
+
+def rangef(start, stop, step, ndigits, extra=None, sort=True):
+    """Return a floating point range from start to stop, INCLUSIVE, using step. The values in the returned list are rounded to ndigits digits
+    """
     
-@dataclass(frozen=True)
-class DCEfficiencyParam:
-    upper: float                # upper output voltage so can set a range
-    loads: list                 # list of floats to set load to in sequence
-    load_wait: float            # number of seconds to wait after changing load before measuring data
-
-DCEfficiencyParams = {
-    '1V8-A': DCEfficiencyParam(upper=2.0,loads=[a/10 for a in range(0,31)],load_wait=3.0), # load: step 0.1A for 0-3A
-}
-
-def DCEfficiencyPlotOLD(x,data,col,header,circuit):
-    if (len(x) == len(data)):
-        print("Close the plot window to continue...")
-        fig, ax1 = plt.subplots()
-        # create list of y from column col in data
-        y = [a[col] for a in data]
-        #@@@#print(x)
-        #@@@#print(y)
-        ax1.plot(x, y, color='blue', ls='-', marker='.')      # plot the data
-        #@@@#ax1.axvline(x=0.0, color='r', linestyle='--')
-        #@@@#ax1.axhline(y=0.0, color='r', linestyle='--')
-        ax1.set_title('Effciency Data for {}'.format(circuit))
-        ax1.set_xlabel(header[0])
-        ax1.set_ylabel(header[col+1])
+    n = int(round(((stop+step)-start)/step,0))
+    lst = [round(a,ndigits) for a in np.linspace(start,stop,n)]
+    
+    if (extra is not None):
+        ## Insert these values
+        if isinstance(extra,int) or isinstance(extra,float):
+            ## if extra is a single value, add it to list appropriately
+            lst = [extra]+lst
+        elif isinstance(extra,list):
+            ## extra is a list so simply add it
+            lst = extra+lst
+        else:
+            ## do not know how to handle this type
+            raise ValueError("rangef(): Incorrect type for 'extra' parameter: {}".format(type(extra)))
         
-        #@@@#fig.tight_layout()
-        plt.show()
+    if sort:
+        ## Sort values
+        lst.sort()
+        
+    return lst
 
 @dataclass(frozen=True)
 class CircuitParam:
@@ -227,16 +224,21 @@ class CircuitParam:
     voutMax: float                # Maximum allowed output voltage (set horizontal line or a background gradient)
     voutAbsMax: float             # Absolute Maximum VOUT
     vinListEff: list              # list of VINs to plot on Efficiency
-    vinListLRg: list              # list of VINs to plot on Load Regulation)
-    iinList: list                 # list of IINs to plot (on Line Regulation)
+    vinListLRg: list              # list of VINs to plot on Line Regulations
+    ioutList: list                # list of IOUTs to plot on Load Regulation
 
 defVinList = vinList=[10.8, 11.4, 12.0, 12.6, 13.2]
+minVolt1v8 = 1.71
+maxVolt1v8 = 1.89
+minFpga1v8 = 1.746
+maxFpga1v8 = 1.854
 
 CircuitParams = {
-    '1V8-A': CircuitParam(voutMin=1.71,  voutMax=1.89,  voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
-    '1V8-B': CircuitParam(voutMin=1.71,  voutMax=1.89,  voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
-    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]), # for FPGA which has tighter VOUT range
-    '1V8-D': CircuitParam(voutMin=1.71,  voutMax=1.89,  voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], iinList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+    ## FPGA 1.8V has a tighter voltage range: 1.746V - 1.854V, but everything else is 1.71V to 1.89V. To better compare, use the FPGA range
+    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=[12.0], ioutList=rangef(0.5,6.0,0.5,1)),
+    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
 }
                           
         
@@ -373,6 +375,10 @@ def DCEfficiencyPlot(df,x,y):
         y_sf = savgol_filter(yl, window, order)
         plt.plot(xl, y_sf)
 
+    yticks = list(range(0,110,10))
+    #print(yticks)
+    plt.yticks(yticks)
+        
     #plt.xlabel("Input Voltage (V)")
     #plt.ylabel("Output Voltage (V)")
     plt.title("Efficiency")
@@ -424,9 +430,9 @@ def LineRegulatonPlot(df,x,y):
         #          (df['Set Load'] == 2.0) |
         #          (df['Set Load'] == 2.5) |
         #          (df['Set Load'] == 3.0)]
-        df1 = df[ (df['Set Load'].isin(params.iinList)) ]
+        df1 = df[ (df['Set Load'].isin(params.ioutList)) ]
         
-        palette = sns.color_palette("hls",len(params.iinList))
+        palette = sns.color_palette("hls",len(params.ioutList))
         sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set Load", palette = palette)
         plt.xlabel("VIN (V)")
         #@@@#plt.get_legend().set_title("title")
@@ -443,7 +449,7 @@ def LineRegulatonPlot(df,x,y):
         #@@@#print(xlocs)
         #@@@#print(xmid)
         plt.text(xmid, params.voutMin, '{}'.format(params.voutMin), color='green', horizontalalignment='center', verticalalignment='bottom')
-        plt.text(xmid, params.voutMax, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
+        plt.text(xmid, params.voutMax-.001, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
         
     plt.xlabel("Input Voltage (V)")
     plt.ylabel("Output Voltage (V)")
@@ -530,9 +536,9 @@ def LoadRegulatonPlot(df,x,y):
     # Use a logarithmic scale for X axis
     plt.xscale("log")
     #plt.xticks([.01, .02, .03, .04, .05, .06, .07, .08 ,.09,.1, .2, .3, .4, .5, .6, .7, .8 ,.9,1,2,3])
-    maxIin = int(np.ceil(params.iinList[-1]))
-    xticks = list(np.linspace(1,9, 9)*1e-2)+list(np.linspace(1,9, 9)*1e-1)+list(np.linspace(1,maxIin,maxIin))
-    print(xticks)
+    maxIout = int(np.ceil(params.ioutList[-1]))
+    xticks = list(np.linspace(1,9, 9)*1e-2)+list(np.linspace(1,9, 9)*1e-1)+list(np.linspace(1,maxIout,maxIout))
+    #@@@#print(xticks)
     plt.xticks(xticks)
     #@@@#plt.xticklabels([0.01, 0.1, 1])
 
@@ -564,7 +570,7 @@ def LoadRegulatonPlot(df,x,y):
         #@@@#print(xlocs)
         #@@@#print(xmid)
         plt.text(xmid, params.voutMin, '{}'.format(params.voutMin), color='green', horizontalalignment='center', verticalalignment='bottom')
-        plt.text(xmid, params.voutMax, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
+        plt.text(xmid, params.voutMax-.001, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
         
     plt.xlabel("Load (A)")
     plt.ylabel("Output Voltage (V)")
