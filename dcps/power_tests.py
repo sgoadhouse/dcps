@@ -429,7 +429,7 @@ DCTestParams = {
     '3V3-B':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,2.5,0.25,2),load_wait=1.5), # load: progressive to 2.5A
     '3V75-B': DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,2.5,0.25,2),load_wait=1.5), # load: progressive to 2.5A
     '3V3-C':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,3.0,0.25,2),load_wait=1.5), # load: progressive to 3A
-    #@@@#'3V3-D':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,10.0,1,1),load_wait=1.5), # load: progressive to 10A
+    '3V3-D':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,10.0,1,1),load_wait=1.5),   # load: progressive to 10A
 }
 
 
@@ -440,7 +440,7 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
     # If testing special circuit, 3V75-B and 3V3-B, remind user to flip the switch as they need
     if (circuit == "3V3-B"):
         print("\n DOUBLE CHECK that SW3 is switched toward '3.75V' [switch is backwards]\n")
-    elif circuit == "3V75-B"):
+    elif (circuit == "3V75-B"):
         print("\n DOUBLE CHECK that SW3 is switched toward '3.3V' [switch is backwards]\n")
     
     ## Make sure power supply is off at start
