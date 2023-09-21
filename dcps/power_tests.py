@@ -49,7 +49,6 @@ from time import sleep
 #@@@#ftdi_url = 'ftdi://ftdi:4232h/1'
 ftdi_url_const = 'ftdi://ftdi:4232:FTK1RRYC/1'
 
-
 def handleFilename(fname, ext, unique=True, timestamp=True):
 
     # If extension exists in fname, strip it and add it back later
@@ -368,6 +367,40 @@ def instrumentStop(instr):
     ## return to LOCAL mode
     instr.setLocal()
 
+def updateLoad(instr,load,lowRange=6.0,rangeCtrl=True):
+    ## - Enable Input of DL3031A, if non-0 load, and Set next current load
+    if (load == 0):
+        instr.inputOff()
+    else:
+        if (rangeCtrl):
+            ## Deal with Current Range
+            range = instr.queryCurrentRange()
+            #@@@#print("Load Current Range: {}".format(instr.queryCurrentRange()))
+            if (load > range or (range > lowRange and load <= lowRange)):
+                # need to turn off load to change the range
+                instr.inputOff()
+                instr.setCurrentRange(load)
+                # set to 0 before turnning load back on in case it was
+                # previously set too high for this circuit
+                instr.setCurrent(0.0) 
+                instr.inputOn()
+                
+        #@@@#instr.inputOff() # @@@ for DEBUG so can trigger on Digital Output
+        if (not instr.isInputOn()):
+            # If the Input is NOT enabled, first set
+            # the load to 0 to make sure it is not too
+            # high from a previous test. However, have
+            # noticed that sometimes input will enable
+            # at a low current anyway and ignore what
+            # it had been set to just recently. So
+            # still set the current after enabling the
+            # input.
+            instr.setCurrent(0.0)
+            instr.inputOn()
+
+        instr.setCurrent(load)
+    
+    
 def rangef(start, stop, step, ndigits, extra=None, sort=True):
     """Return a floating point range from start to stop, INCLUSIVE, using step. The values in the returned list are rounded to ndigits digits
     """
@@ -463,9 +496,22 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
     ELOAD.inputOff()    
     ELOAD.setFunction('current')   # Constant Current
     ELOAD.setSenseState(True)      # Enable Sense inputs
-    ELOAD.setImonExt(True)         # Enable the IMON_EXT output
-    ELOAD.setDigitalOutput(left=True,count=2) # Enable the Digital output in ON/OFF mode
+    #@@@#ELOAD.setImonExt(True)         # Enable the IMON_EXT output
+    #@@@#ELOAD.setDigitalOutput(left=True,count=2) # Enable the Digital output in ON/OFF mode
 
+    ## Check the current range to see if need range control
+    currentRange = ELOAD.queryCurrentRange()
+    maxLoad = np.max(param.loads)
+    if (maxLoad > currentRange):
+        # Need to check and change current range.
+        #
+        # Try to handle this way so only circuits that need the
+        # switching back and forth will use the extra time to read the
+        # range.
+        needCurrentRangeCtrl = True
+    else:
+        needCurrentRangeCtrl = False
+    
     #@@@#input("Press Enter to continue...") 
 
     ## Set for the first VIN in the sequence. Use params for other parameters
@@ -518,22 +564,8 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
 
                 for load in param.loads:
                     ## - Enable Input of DL3031A, if non-0 load, and Set next current load
-                    if (load == 0):
-                        ELOAD.inputOff()
-                        sleep(param.load_wait)
-                    else:
-                        #@@@#ELOAD.inputOff() # @@@ for DEBUG so can trigger on Digital Output
-                        if (not ELOAD.isInputOn()):
-                            # If the Input is NOT enabled, then first set the load
-                            # value to make sure it is not too high from a
-                            # previous test. However, have noticed that sometimes
-                            # input will enable at a low current anyway and ignore
-                            # what it had been set to just recently. So still set
-                            # the current after enabling the input.
-                            ELOAD.setCurrent(load,wait=0.2)
-                            ELOAD.inputOn()
-                        ELOAD.setCurrent(load)
-                        sleep(param.load_wait)
+                    updateLoad(ELOAD,load,lowRange=6.0,rangeCtrl=needCurrentRangeCtrl)
+                    sleep(param.load_wait)
                         
                     ## - measure BK9115 Voltage & Current
                     (psVoltage, psCurrent) = measurePowerValues(PS)
