@@ -251,6 +251,8 @@ CircuitParams = {
 
     '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]),
     '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]),
+
+    '0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 50.0, 60.0]),
 }
                           
         

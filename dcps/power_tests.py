@@ -470,6 +470,10 @@ DCTestParams = {
                           loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,17.5,20.0,22.5,25.0,27.5,30.0,35.0,40.0],load_wait=1.5),   # load: progressive to 40A
     '1V2-B':  DCTestParam(upper=1.30,max_iin=5.5,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,
                           loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,17.5,20.0,22.5,25.0,27.5,30.0,35.0,40.0],load_wait=1.5),   # load: progressive to 40A
+
+    ## Initially, only have a 60A electronic load so just gather data up until 60A so have something for poster
+    '0V85':   DCTestParam(upper=1.00,max_iin=15,ovp=16.1,ocp=15.5,vins=def_vins,vin_wait=2.5,
+                          loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,20.0,30.0,40.0,50.0,55.0,60.0],load_wait=1.5),   # load: progressive to 60A
 }
 
 
