@@ -463,7 +463,15 @@ DCTestParams = {
     '3V75-B': DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,2.5,0.25,2),load_wait=1.5), # load: progressive to 2.5A
     '3V3-C':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,3.0,0.25,2),load_wait=1.5), # load: progressive to 3A
     '3V3-D':  DCTestParam(upper=4.25,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,10.0,1,1),load_wait=1.5),   # load: progressive to 10A
+
+    '0V9':    DCTestParam(upper=1.00,max_iin=5.0,ovp=16.1,ocp=5.5,vins=def_vins,vin_wait=2.5,loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.1,1)+rangef(1.0,15.0,1,1),load_wait=1.5),   # load: progressive to 15A
+
+    '1V2-A':  DCTestParam(upper=1.30,max_iin=5.5,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,
+                          loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,17.5,20.0,22.5,25.0,27.5,30.0,35.0,40.0],load_wait=1.5),   # load: progressive to 40A
+    '1V2-B':  DCTestParam(upper=1.30,max_iin=5.5,ovp=16.1,ocp=6.0,vins=def_vins,vin_wait=2.5,
+                          loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,17.5,20.0,22.5,25.0,27.5,30.0,35.0,40.0],load_wait=1.5),   # load: progressive to 40A
 }
+
 
 
 def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):

@@ -245,9 +245,12 @@ CircuitParams = {
     '3V3-B':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
     '3V75-B': CircuitParam(voutMin=3.60, voutMax=3.90, voutAbsMax=4.5, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
     '3V3-C':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]),
+    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0]),
 
+    '0V9':    CircuitParam(voutMin=0.873, voutMax=0.927, voutAbsMax=1.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0, 13.0, 14.0, 15.0]),
 
+    '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]),
+    '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]),
 }
                           
         
