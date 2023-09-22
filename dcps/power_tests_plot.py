@@ -249,10 +249,11 @@ CircuitParams = {
 
     '0V9':    CircuitParam(voutMin=0.873, voutMax=0.927, voutAbsMax=1.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0, 13.0, 14.0, 15.0]),
 
-    '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]),
-    '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]),
+    '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
+    '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
 
-    '0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 50.0, 60.0]),
+    #@@@#'0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 50.0, 60.0]),
+    '0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 48.0]),
 }
                           
         
@@ -550,9 +551,16 @@ def LoadRegulatonPlot(df,x,y):
     # Use a logarithmic scale for X axis
     plt.xscale("log")
     #plt.xticks([.01, .02, .03, .04, .05, .06, .07, .08 ,.09,.1, .2, .3, .4, .5, .6, .7, .8 ,.9,1,2,3])
-    maxIout = int(np.ceil(params.ioutList[-1]))
-    xticks = list(np.linspace(1,9, 9)*1e-2)+list(np.linspace(1,9, 9)*1e-1)+list(np.linspace(1,maxIout,maxIout))
-    #@@@#print(xticks)
+    #@@@#maxIout = int(np.ceil(params.ioutList[-1]))
+    maxIout = int(np.ceil(np.max(params.ioutList)))
+    # Create a list of log ticks from 1e-2 to 9e2
+    xTickList = []
+    for mag in range(-2,3):
+        xTickList += list(np.linspace(1,9, 9)*(10**mag))
+    # xticks is a list with xTickList values <= maxIout
+    xticks = [xt for xt in xTickList if xt <= maxIout]
+     
+    print(xticks)
     plt.xticks(xticks)
     #@@@#plt.xticklabels([0.01, 0.1, 1])
 
