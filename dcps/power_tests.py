@@ -39,7 +39,7 @@ import numpy as np
 import pandas as pd
 import csv
 
-from sys import modules, stdout, exit
+from sys import modules, stdout, exit, exc_info
 import logging
 from os import environ, path
 from datetime import datetime
@@ -445,6 +445,7 @@ class DCTestParam:
     vin_wait: float             # number of seconds to wait after changing the input voltage before measuring data
     loads: list                 # list of floats to set load to in sequence
     load_wait: float            # number of seconds to wait after changing load before measuring data
+    load_accr: float = 0.05     # current accuracy (as percentage) so can check that load was set correctly
 
 ## For 1V8-A circuit, looked at VOUT and IMON on oscilloscope and
 ## waiting 1.5s vs 2.5s after change the load does not seem to make a
@@ -472,8 +473,11 @@ DCTestParams = {
                           loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,17.5,20.0,22.5,25.0,27.5,30.0,35.0,40.0],load_wait=1.5),   # load: progressive to 40A
 
     ## Initially, only have a 60A electronic load so just gather data up until 60A so have something for poster
+    ## UPDATE: Damn load won't go much above 47A! Not sure why. Heat? Low Voltage?
+    ##         Put a big fan on the load and can get another Amp - so try 48A
     '0V85':   DCTestParam(upper=1.00,max_iin=15,ovp=16.1,ocp=15.5,vins=def_vins,vin_wait=2.5,
-                          loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,20.0,30.0,40.0,50.0,55.0,60.0],load_wait=1.5),   # load: progressive to 60A
+                          loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,20.0,30.0,40.0,48.0],load_wait=1.5),   # load: progressive to 60A
+                          #@@@#loads=rangef(0,0.08,0.02,2)+rangef(0.1,0.9,0.2,1)+[1.0,2.0,3.0,6.0,10.0,15.0,20.0,30.0,40.0,50.0,55.0,60.0],load_wait=1.5),   # load: progressive to 60A
 }
 
 
@@ -590,6 +594,14 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
                     outVoltage = DMM.measureVoltage()
                     outCurrent = ELOAD.measureCurrent()
 
+                    ## Check that outCurrent is within 5% of expected load. If not, raise error
+                    maxExpLoad = (load * (1.0 + param.load_accr))
+                    minExpLoad = (load * (1.0 - param.load_accr))
+                    #@@@#print("Set load to {:.3f}A but measured current of {:.3f}A was out of expected range of {:.3f}A to {:.3f}A".format(load,outCurrent,minExpLoad,maxExpLoad))
+                    
+                    if (outCurrent > maxExpLoad or outCurrent < minExpLoad):
+                        raise RuntimeError("Set load to {:.3f}A but measured current of {:.3f}A was out of expected range of {:.3f}A to {:.3f}A".format(load,outCurrent,minExpLoad,maxExpLoad))
+                    
                     ## - compute Power Out / Power In as a percentage
                     outPower = (outVoltage * outCurrent)
                     inPower  = (inVoltage * inCurrent)
@@ -612,10 +624,9 @@ def DCTest(PS,PTB,DMM,ELOAD,circuit,boardName,trials,param):
         ## Use Ctrl-C to get out of test loop so can save data and return to close instruments
         print("Saving collected data and shutting down instruments. Please Wait ...")
 
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
-        print("Saving collected data and shutting down instruments. Please Wait ...")
-    
+    except Exception as error:
+        print("An unexpect error occurred:\n", type(error).__name__, "–", error)
+  
     #@@@#print(data)
 
     ## Disable ELOAD
