@@ -43,6 +43,10 @@ import logging
 from os import environ, path
 from datetime import datetime
 from time import sleep
+from pathlib import PurePath
+
+## DPI when saving plots to an image file
+saveFigDPI = 1200
 
 
 def handleFilename(fname, ext, unique=True, timestamp=True):
@@ -227,7 +231,8 @@ class CircuitParam:
     vinListLRg: list              # list of VINs to plot on Load Regulations
     ioutList: list                # list of IOUTs to plot on Line Regulation
 
-defVinList = vinList=[10.8, 11.4, 12.0, 12.6, 13.2]
+defVinList = [10.8, 11.4, 12.0, 12.6, 13.2]
+defVinLRg  = [12.0]
 minVolt1v8 = 1.71
 maxVolt1v8 = 1.89
 minFpga1v8 = 1.746
@@ -235,29 +240,29 @@ maxFpga1v8 = 1.854
 
 CircuitParams = {
     ## FPGA 1.8V has a tighter voltage range: 1.746V - 1.854V, but everything else is 1.71V to 1.89V. To better compare, use the FPGA range
-    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),  ###rangef(0.5,6.0,0.5,1)),
-    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),  ###rangef(0.5,6.0,0.5,1)),
+    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
 
     ## FireFly and ELM want 3.15V to 3.45V range but clocks and SSD are fine with 3.135V to 3.465V, so set to 3.15 to 3.45
-    '3V3-A':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '3V3-B':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
-    '3V75-B': CircuitParam(voutMin=3.60, voutMax=3.90, voutAbsMax=4.5, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
-    '3V3-C':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0]),
+    '3V3-A':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '3V3-B':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
+    '3V75-B': CircuitParam(voutMin=3.60, voutMax=3.90, voutAbsMax=4.5, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
+    '3V3-C':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0]),
 
-    '0V9':    CircuitParam(voutMin=0.873, voutMax=0.927, voutAbsMax=1.0, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0, 13.0, 14.0, 15.0]),
+    '0V9':    CircuitParam(voutMin=0.873, voutMax=0.927, voutAbsMax=1.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0, 13.0, 14.0, 15.0]),
 
-    '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
-    '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
+    '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
+    '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
 
-    #@@@#'0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 50.0, 60.0]),
-    '0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=[12.0], ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 48.0]),
+    #@@@#'0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 5.0, 20.0, 30.0, 40.0, 50.0, 60.0]),
+    '0V85':   CircuitParam(voutMin=0.825, voutMax=0.876, voutAbsMax=1.00, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 10.0, 20.0, 30.0, 40.0, 48.0]),
 }
                           
         
-def DCEfficiencyPlot(df,x,y):
+def DCEfficiencyPlot(df,x,y,saveFilename=None,circuit=None):
     print("Close the plot window to continue...")
 
     #@@@#print(df[x].values)
@@ -396,10 +401,23 @@ def DCEfficiencyPlot(df,x,y):
         
     #plt.xlabel("Input Voltage (V)")
     #plt.ylabel("Output Voltage (V)")
-    plt.title("Efficiency")
+
+    title = "Efficiency"
+    if circuit is None:
+        plt.title(title)
+    else:
+        plt.title(circuit+": "+title)
+
+    if (saveFilename is not None):
+        # Handle output of plot as an image file
+        saveFilename = saveFilename.with_stem(saveFilename.stem+"_Eff")
+        #@@@#print(saveFilename)
+        plt.savefig(saveFilename,dpi=saveFigDPI,bbox_inches='tight',pad_inches = 0,facecolor=(1, 1, 1, 0)) # facecolor makes the border transparent
+        print("Saved plot image to {}".format(saveFilename))
+        
     plt.show()
 
-def LineRegulatonPlot(df,x,y):
+def LineRegulatonPlot(df,x,y,saveFilename=None,circuit=None):
     """Plot VOUT vs VIN with a different color hue for a set of IOUT loads"""
     
     print("Close the plot window to continue...")
@@ -449,6 +467,9 @@ def LineRegulatonPlot(df,x,y):
         
         palette = sns.color_palette("hls",len(params.ioutList))
         sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set Load", palette = palette)
+
+        print("Voltage Range Req. {:.3f} to {:.3f}V / Actual {:.3f} to {:.3f}V".format(params.voutMin, params.voutMax, np.min(df1['VOUT (V)']), np.max(df1['VOUT (V)'])))        
+        
         plt.xlabel("VIN (V)")
         #@@@#plt.get_legend().set_title("title")
         plt.legend().set_title("Load (A)")
@@ -465,12 +486,27 @@ def LineRegulatonPlot(df,x,y):
         #@@@#print(xmid)
         plt.text(xmid, params.voutMin, '{}'.format(params.voutMin), color='green', horizontalalignment='center', verticalalignment='bottom')
         plt.text(xmid, params.voutMax-.001, '{}'.format(params.voutMax), color='green', horizontalalignment='center', verticalalignment='top')
-        
+
     plt.xlabel("Input Voltage (V)")
     plt.ylabel("Output Voltage (V)")
-    plt.title("Line Regulation")
+    
+    #@@@#title = "Line Regulation"
+    title = "Line and Load Regulation"
+
+    if circuit is None:
+        plt.title(title)
+    else:
+        plt.title(circuit+": "+title)
+    
     #@@@#ax.tick_params(axis="y", bottom=True, top=True, labelbottom=True, labeltop=True)
     #@@@#print(plt.yticks())
+
+    if (saveFilename is not None):
+        # Handle output of plot as an image file
+        saveFilename = saveFilename.with_stem(saveFilename.stem+"_LiR")
+        plt.savefig(saveFilename,dpi=saveFigDPI,bbox_inches='tight',pad_inches = 0,facecolor=(1, 1, 1, 0)) # facecolor makes the border transparent
+        print("Saved plot image to {}".format(saveFilename))
+
     plt.show()
         
 
@@ -500,7 +536,7 @@ def restore_minor_ticks_log_plot(ax = None, n_subticks=9) -> None:
     ax.xaxis.set_minor_locator(locmin)
     ax.xaxis.set_minor_formatter(NullFormatter())
     
-def LoadRegulatonPlot(df,x,y):
+def LoadRegulatonPlot(df,x,y,saveFilename=None,circuit=None):
     """Plot VOUT vs IOUT with a different color hue for a set of VINs"""
 
     print("Close the plot window to continue...")
@@ -544,6 +580,9 @@ def LoadRegulatonPlot(df,x,y):
         
         palette = sns.color_palette("hls",len(params.vinListLRg))
         sns.lineplot(data=df1, x=x, y=y, linewidth=lw, hue="Set VIN", palette = palette)
+
+        print("Voltage Range Req. {:.3f} to {:.3f}V / Actual {:.3f} to {:.3f}V".format(params.voutMin, params.voutMax, np.min(df1['VOUT (V)']), np.max(df1['VOUT (V)'])))        
+        
         plt.xlabel("Load (A)")
         #@@@#plt.get_legend().set_title("title")
         plt.legend().set_title("VIN (V)")
@@ -560,7 +599,7 @@ def LoadRegulatonPlot(df,x,y):
     # xticks is a list with xTickList values <= maxIout
     xticks = [xt for xt in xTickList if xt <= maxIout]
      
-    print(xticks)
+    #@@@#print(xticks)
     plt.xticks(xticks)
     #@@@#plt.xticklabels([0.01, 0.1, 1])
 
@@ -596,9 +635,23 @@ def LoadRegulatonPlot(df,x,y):
         
     plt.xlabel("Load (A)")
     plt.ylabel("Output Voltage (V)")
-    plt.title("Load Regulation")
-    #@@@#ax.tick_params(axis="y", bottom=True, top=True, labelbottom=True, labeltop=True)
+
+    title = "Load Regulation"
+
+    if circuit is None:
+        plt.title(title)
+    else:
+        plt.title(circuit+": "+title)
+    
+        #@@@#ax.tick_params(axis="y", bottom=True, top=True, labelbottom=True, labeltop=True)
     #@@@#print(plt.yticks())
+
+    if (saveFilename is not None):
+        # Handle output of plot as an image file
+        saveFilename = saveFilename.with_stem(saveFilename.stem+"_LoR")
+        plt.savefig(saveFilename,dpi=saveFigDPI,bbox_inches='tight',pad_inches = 0,facecolor=(1, 1, 1, 0)) # facecolor makes the border transparent
+        print("Saved plot image to {}".format(saveFilename))
+
     plt.show()
         
 if __name__ == '__main__':
@@ -612,6 +665,10 @@ if __name__ == '__main__':
     mutex_grp.add_argument('-o', '--load_regulation',   action='store_true', help='plot the Load Regulation test data')
 
     parser.add_argument('filename', help='filename of NPZ datafile')
+    parser.add_argument('-c', '--circuit', action='store', type=str, help='name of circuit for the plot title')
+    parser.add_argument('-s', '--svg', action='store_true', help='save as a SVG image using filename with .svg extension')
+    parser.add_argument('-p', '--png', action='store_true', help='save as a PNG image using filename with .png extension')
+    parser.add_argument('-j', '--jpg', action='store_true', help='save as a JPEG image using filename with .jpg extension')
     
     args = parser.parse_args()
 
@@ -633,14 +690,26 @@ if __name__ == '__main__':
                 trials = meta[3]
         else:
             df = dataLoadPKL(args.filename)
+
+        ## Create output image filename if requested
+        path = PurePath(args.filename)
+        if (args.svg):
+            saveFilename = path.with_suffix('.svg')            
+        elif (args.png):
+            saveFilename = path.with_suffix('.png')            
+        elif (args.jpg):
+            saveFilename = path.with_suffix('.jpg')            
+        else:
+            # indicate nothing to be saved
+            saveFilename = None
             
         if (args.power_efficiency):
             #@@@#DCEfficiencyPlot(df,"Set Load","Efficiency (%)",circ, trials)
-            DCEfficiencyPlot(df,"Set Load","Efficiency (%)")
+            DCEfficiencyPlot(df,"Set Load","Efficiency (%)",saveFilename,args.circuit)
         elif (args.line_regulation):
-            LineRegulatonPlot(df,"Set VIN","VOUT (V)")
+            LineRegulatonPlot(df,"Set VIN","VOUT (V)",saveFilename,args.circuit)
         elif (args.load_regulation):
-            LoadRegulatonPlot(df,"Set Load","VOUT (V)")
+            LoadRegulatonPlot(df,"Set Load","VOUT (V)",saveFilename,args.circuit)
         else:
             raise ValueError("Unknown test type '{}'".format(test))
         
