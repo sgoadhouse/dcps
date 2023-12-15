@@ -33,10 +33,10 @@ from __future__ import print_function
 
 try:
     from . import SCPI
-except ValueError:
+except (ValueError, ImportError):
     from SCPI import SCPI
     
-from time import sleep
+import time
 import pyvisa as visa
 import re
 from warnings import warn
@@ -106,7 +106,7 @@ class IT6500C(SCPI):
         
         str = "RES {}".format(resistance)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def queryInternalResistance(self):
         """Returns what resistance the the PSU is configured to.
@@ -132,7 +132,7 @@ class IT6500C(SCPI):
 
         str = "CV:PRIority {}".format(priority)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def setCCPriority(self, priority, wait=None):
         """Set the priority of CC-loop. High priority CC-loop is useful for example for LEDs or lasers
@@ -177,7 +177,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setCurrentRise').format(seconds)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def setCurrentRise(self, seconds, wait=None):
         """Set the fall time of the output current
@@ -191,7 +191,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setCurrentFall').format(seconds)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def queryCurrentRise(self):
         """Return what the current rise time is configured to
@@ -217,7 +217,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setVoltageRise').format(seconds)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def setVoltageRise(self, seconds, wait=None):
         """Set the fall time of the output voltage
@@ -231,7 +231,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setVoltageFall').format(seconds)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def queryVoltageRise(self):
         """Return what the voltage rise time is configured to
@@ -257,7 +257,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setPowerRise').format(seconds)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def setPowerRise(self, seconds, wait=None):
         """Set the fall time of the output power
@@ -271,7 +271,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setPowerFall').format(seconds)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def queryPowerRise(self):
         """Return what the power rise time is configured to
@@ -285,7 +285,7 @@ class IT6500C(SCPI):
 
         return self.fetchGenericValue(self._Cmd('queryPowerFall'))
     
-    def setDCRCapacity(self, amp_hours, wait=none):
+    def setDCRCapacity(self, amp_hours, wait=None):
         """Set the capacity of the battery under test
            
            amp_hours    - The capacity of the battery in amp amp_hours
@@ -297,7 +297,7 @@ class IT6500C(SCPI):
         
         str = self._Cmd('setDCRCapacity').format(amp_hours)
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def queryDCRCapacity(self):
         """Returns the configured battery capacity of the DCR DUT
@@ -314,7 +314,7 @@ class IT6500C(SCPI):
 
         str = self._Cmd('DCROn')
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def DCROff(self, wait=None):
         """Disables the DCR measurement
@@ -325,7 +325,7 @@ class IT6500C(SCPI):
 
         str = self._Cmd('DCROff')
         self._instWrite(str)
-        sleep(wait)
+        time.sleep(wait)
     
     def isDCROn(self):
         """Returns True if the DCR measurement is enabled
@@ -550,16 +550,12 @@ class IT6500C(SCPI):
 
 
 if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Access and control an ITECH 6500C/D series 2 quadrant DC Power Supply/load')
-    args = parser.parse_args()
-
-    from time import sleep
-    from os import environ
     import pyvisa
     
     rm = pyvisa.ResourceManager('@py')
     devices = rm.list_resources()
+
+    print(devices)
 
     resource = None
 
@@ -599,38 +595,45 @@ if __name__ == '__main__':
     psu = IT6500C(resource)
     psu.open()
 
-    ## set Remote Lock On
-    #psu.setRemoteLock()
+    ## set Remote mode
+    psu.setRemote()
     
-    psu.beeperOff()
+    # psu.beeperOff()
     
-    if not psu.isOutputOn(args.chan):
+    if not psu.isOutputOn():
         psu.outputOn()
-        
-    print('Settings: {:6.4f} V  {:6.4f} A'.
-              format(psu.queryVoltage(),
-                     psu.queryCurrent()))
+    
+
+    vol = psu.queryVoltage()
+    cur = psu.queryCurrent()
+    print(f'Settings: {vol:6.4f} V  {cur:6.4f} A')
 
     voltageSave = psu.queryVoltage()
     
     #print(psu.idn())
     print('{:6.4f} V'.format(psu.measureVoltage()))
     print('{:6.4f} A'.format(psu.measureCurrent()))
+    print('{:6.4f} W'.format(psu.measurePower()))
 
     psu.setVoltage(2.7)
 
     print('{:6.4f} V'.format(psu.measureVoltage()))
     print('{:6.4f} A'.format(psu.measureCurrent()))
-
+    print('{:6.4f} W'.format(psu.measurePower()))
+    time.sleep(2)
     psu.setVoltage(2.3)
 
     print('{:6.4f} V'.format(psu.measureVoltage()))
     print('{:6.4f} A'.format(psu.measureCurrent()))
+    print('{:6.4f} W'.format(psu.measurePower()))
 
+    time.sleep(2)
     psu.setVoltage(voltageSave)
-
-    print('{:6.4f} V'.format(psu.measureVoltage()))
-    print('{:6.4f} A'.format(psu.measureCurrent()))
+   
+    print('{:6.4f} V'.format(psu.measureVoltage()), end='\t')
+    print('{:6.4f} A'.format(psu.measureCurrent()), end='\t')
+    print('{:6.4f} W'.format(psu.measurePower()))
+    time.sleep(1)
 
     ## turn off the channel
     psu.outputOff()
