@@ -32,3 +32,6 @@ from dcps.RigolDL3000 import RigolDL3000
 
 # Support of Keithley DMM6500 Digital Multimeter
 from dcps.Keithley6500 import Keithley6500
+
+# Support of ITECH IT6500C series psus
+from dcps.IT6500C import IT6500C
