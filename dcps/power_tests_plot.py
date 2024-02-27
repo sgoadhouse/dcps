@@ -240,19 +240,19 @@ maxFpga1v8 = 1.854
 
 CircuitParams = {
     ## FPGA 1.8V has a tighter voltage range: 1.746V - 1.854V, but everything else is 1.71V to 1.89V. To better compare, use the FPGA range
-    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),  ###rangef(0.5,6.0,0.5,1)),
-    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
+    '1V8-A': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 3.0]),
+    '1V8-B': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 3.0]),
+    '1V8-C': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=1.9, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 3.0, 4.0, 6.0]),  ###rangef(0.5,6.0,0.5,1)),
+    '1V8-D': CircuitParam(voutMin=1.746, voutMax=1.854, voutAbsMax=2.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 3.0]),
 
     ## FireFly and ELM want 3.15V to 3.45V range but clocks and SSD are fine with 3.135V to 3.465V, so set to 3.15 to 3.45
-    '3V3-A':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '3V3-B':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
-    '3V75-B': CircuitParam(voutMin=3.60, voutMax=3.90, voutAbsMax=4.5, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 2.5]),
-    '3V3-C':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 2.0, 3.0]),
-    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0]),
+    '3V3-A':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 3.0]),
+    '3V3-B':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 2.5]),
+    '3V75-B': CircuitParam(voutMin=3.60, voutMax=3.90, voutAbsMax=4.5, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 2.5]),
+    '3V3-C':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 2.0, 3.0]),
+    '3V3-D':  CircuitParam(voutMin=3.15, voutMax=3.45, voutAbsMax=3.6, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 1.0, 3.0, 6.0, 10.0]),
 
-    '0V9':    CircuitParam(voutMin=0.873, voutMax=0.927, voutAbsMax=1.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 0.5, 1.0, 3.0, 6.0, 10.0, 13.0, 14.0, 15.0]),
+    '0V9':    CircuitParam(voutMin=0.873, voutMax=0.927, voutAbsMax=1.0, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 3.0, 6.0, 10.0, 15.0]),
 
     '1V2-A':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
     '1V2-B':  CircuitParam(voutMin=1.164, voutMax=1.236, voutAbsMax=1.30, vinListEff=defVinList, vinListLRg=defVinLRg, ioutList=[0.1, 6.0, 10.0, 20.0, 40.0]),
