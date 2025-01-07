@@ -59,13 +59,21 @@ class AimTTiPLP(SCPI):
         verbosity - verbosity output - set to 0 for no debug output
         kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
 
-        NOTE: According to the documentation for this power supply, the
-        resource string when using the Ethernet access method must look
-        like TCPIP0::192.168.1.100::9221::SOCKET where 192.168.1.100 is
-        replaced with the specific IP address of the power supply. The
-        inclusion of the 9221 port number and SOCKET keyword are
-        apparently mandatory for these power supplies.
+        NOTE: This instrument only implements enough VXI-11 to support the discovery protocol
+        It ignores any writes to it, and returns an *IDN? style response to any read from the device.
+        All communication with this device has to be done through a raw socket. 
+        This can be acomplished by changing the resource string 
+            from TCPIP::<IP>::inst0::INSTR 
+              to TCPIP::<IP>::9221::SOCKET
+        As auto discovery will give an incompatible resource string, with unclear failure modes, this automatically does this
+        replacement if the resource string starts with TCPIP and doesn't end with SOCKET
+        https://web.archive.org/web/20240527022453/https://resources.aimtti.com/manuals/CPX400DP_Instruction_Manual-Iss1.pdf
         """
+
+        if resource.startswith('TCPIP') and not resource.endswith('SOCKET'):
+            ip = resource.split('::')[1]
+            resource = f'TCPIP::{ip}::9221::SOCKET'
+
         super(AimTTiPLP, self).__init__(resource, max_chan=3, wait=wait,
                                         cmd_prefix='',
                                         verbosity=verbosity,
