@@ -8,7 +8,8 @@ pyVISA and the SCPI command set. For now, this supports only the
 following DC power supplies:
 
 * Rigol DP800 series *(tested with DP832A)*
-* Aim TTi PL-P series
+* Aim TTi PL-P series *(tested with PL303QMD-P)*
+   * Aim TTi CPX series *(tested by a third-party contributor with CPX400D)*
 * BK Precision 9115 series *(tested with 9115)*
 * Agilent/Keysight E364xA series  *(tested with E3642A)*
 
@@ -18,6 +19,9 @@ should be supported but only the indicated models were used for
 development and testing.
 
 As new power supplies are added, they should each have their own sub-package.
+
+Other contributors have added support for the following DC power supplies:
+* ITECH 6500C/D series 2 quadrant DC Power Supply/load
 
 In addition to the above traditional power supplies, a few other
 instruments have been added that have a similar control paradigm such
@@ -77,7 +81,7 @@ lab environment, An Ethernet to GPIB or USB to GPIB interface can be
 used. The only such interfaces that have been tested so far are:
 
 * [Prologix Ethernet to GPIB adapter](http://prologix.biz/gpib-ethernet-controller.html)</br>
-  <img src="https://i0.wp.com/prologix.biz/wp-content/uploads/2020/10/Ethernet-back_zoom.jpg" width="300">  
+  <img src="https://i0.wp.com/prologix.biz/wp-content/uploads/2023/07/Ethernet-back_zoom.jpg?resize=600%2C600&ssl=1" width="300">  
 * [KISS-488 Ethernet to GPIB adapter](https://www.ebay.com/itm/114514724752)</br>
   <img src="https://i.ebayimg.com/images/g/tegAAOSwLcNclY1g/s-l500.jpg" width="300">
 
@@ -90,13 +94,15 @@ used. See the code comments for these models to learn more.
 # WARNING!
 Be *really* careful since you are controlling a power supply that may
 be connected to something that does not like to go to 33V when you
-meant 3.3V and it may express its displeasure by exploding all over
-the place. So be sure to do ALL testing without a device connected, as
-much as possible, and make use of the protections built into the power
-supply. For example, you can often set voltage and current limits that
-the power supply will obey and ignore requests by these commands to go
-outside these allowable ranges. There are even SCPI commands to set
-these limits, although it may be safer that they be set manually. 
+meant to output 3.3V but a bug in your script commanded 33V. That
+device connected to the power supply may express its displeasure of
+getting 33V by exploding all over the place. So be sure to do ALL
+testing without a device connected, as much as possible, and make use
+of the protections built into the power supply. For example, you can
+often set voltage and current limits that the power supply will obey
+and ignore requests by these commands to go outside these allowable
+ranges. There are even SCPI commands to set these limits, although it
+may be safer that they be set manually.
 
 # Usage
 The code is a very basic class for controlling and accessing the
@@ -159,26 +165,19 @@ rigol.close()
 ## Taking it Further
 This implements a small subset of available commands.
 
-For information on what is possible for the Rigol DP8xx, see the
-[Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
+For information on what is possible with specific commands for the
+various supported power supplies and related equipment, see:
 
-For information on what is possible for the Aim TTi PL-P power
-supplies, see the [New PL & PL-P Series Instruction Manual](http://resources.aimtti.com/manuals/New_PL+PL-P_Series_Instruction_Manual-Iss18.pdf)
-
-For information on what is possible for the BK Precision 9115 power
-supplies, see the [Model: 9115 Multi-Range DC Power Supply PROGRAMMING MANUAL](https://bkpmedia.s3.amazonaws.com/downloads/programming_manuals/en-us/9115_series_programming_manual.pdf)
-
-For information on what is possible for the Agilent/Keysight E364xA power
-supplies, see the [Model: Keysight E364xA Single Output DC Power Supplies](https://www.keysight.com/us/en/assets/9018-01165/user-manuals/9018-01165.pdf?success=true)
-
-For information on what is possible for the Keithley/Tektronix 622x series Precision Current Source
-supplies, see the [Model 6220 DC Current Source Model 6221 AC and DC Current Source User's Manual](https://www.tek.com/product-series/ultra-sensitive-current-sources-series-6200-manual/model-6220-dc-current-source-model)
-
-For information on what is possible for the Keithley/Tektronix 2182/2182A Nanovoltmeter
-supplies, see the [Models 2182 and 2182A Nanovoltmeter User's Manual](https://www.tek.com/keithley-low-level-sensitive-and-specialty-instruments/keithley-nanovoltmeter-model-2182a-manual/models-2182-and-2182a-nanovoltmeter-users-manual)
-
-For information on what is possible for the Keithley/Tektronix 2400 series SourceMeter
-supplies, see the [Series 2400 SourceMeter User's Manual](https://download.tek.com/manual/2400S-900-01_K-Sep2011_User.pdf)
+* Rigol DP8xx: [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
+* Aim TTi PL-P: [New PL & PL-P Series Instruction Manual](http://resources.aimtti.com/manuals/New_PL+PL-P_Series_Instruction_Manual-Iss18.pdf)
+* Aim TTi CPX: [CPX400DP PowerFlex Dual DC Power Supply Instruction Manual](https://resources.aimtti.com/manuals/CPX400DP_Instruction_Manual-Iss1.pdf)
+* BK Precision 9115: [9115 Multi-Range DC Power Supply PROGRAMMING MANUAL](https://bkpmedia.s3.amazonaws.com/downloads/programming_manuals/en-us/9115_series_programming_manual.pdf)
+* ITECH IT6500C Series: [IT6500C Series User Manual](https://cdn.itechate.com/uploadfiles/用户手册/user%20manual/it6500/IT6500C%20User%20Manual-EN.pdf) 
+ and [IT6500C/D Series Programming Guide](https://www.calpower.it/gallery/cpit6500cd-programming-guide-en2020.pdf)
+* Agilent/Keysight E364xA: [Keysight E364xA Single Output DC Power Supplies](https://www.keysight.com/us/en/assets/9018-01165/user-manuals/9018-01165.pdf?success=true)
+* Keithley/Tektronix 622x: [Model 6220 DC Current Source Model 6221 AC and DC Current Source User's Manual](https://www.tek.com/product-series/ultra-sensitive-current-sources-series-6200-manual/model-6220-dc-current-source-model)
+* Keithley/Tektronix 2182/2182A Nanovoltmeter: [Models 2182 and 2182A Nanovoltmeter User's Manual](https://www.tek.com/keithley-low-level-sensitive-and-specialty-instruments/keithley-nanovoltmeter-model-2182a-manual/models-2182-and-2182a-nanovoltmeter-users-manual)
+* Keithley/Tektronix 2400 series SourceMeter: [Series 2400 SourceMeter User's Manual](https://download.tek.com/manual/2400S-900-01_K-Sep2011_User.pdf)
 
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the
