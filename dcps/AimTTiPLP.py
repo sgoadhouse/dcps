@@ -256,7 +256,7 @@ class AimTTiPLP(SCPI):
         ret = self._instQuery(str)
 
         # Pull out words from response
-        match = re.match('^([^\s0-9]+)([0-9]+)\s+([0-9.+-]+)',ret)
+        match = re.match(r'^([^\s0-9]+)([0-9]+)\s+([0-9.+-]+)',ret)
         if (match == None):
             raise RuntimeError('Unexpected response: "{}"'.format(ret))
         else:
@@ -286,7 +286,7 @@ class AimTTiPLP(SCPI):
         ret = self._instQuery(str)
 
         # Pull out words from response
-        match = re.match('^([^\s0-9]+)([0-9]+)\s+([0-9.+-]+)',ret)
+        match = re.match(r'^([^\s0-9]+)([0-9]+)\s+([0-9.+-]+)',ret)
         if (match == None):
             raise RuntimeError('Unexpected response: "{}"'.format(ret))
         else:
@@ -315,7 +315,7 @@ class AimTTiPLP(SCPI):
         ret = self._instQuery(str)
 
         # Pull out words from response
-        match = re.match('^([0-9.+-]+)([^\s]+)',ret)
+        match = re.match(r'^([0-9.+-]+)([^\s]+)',ret)
         if (match == None):
             raise RuntimeError('Unexpected response: "{}"'.format(ret))
         else:
@@ -344,7 +344,7 @@ class AimTTiPLP(SCPI):
         ret = self._instQuery(str)
 
         # Pull out words from response
-        match = re.match('^([0-9.+-]+)([^\s]+)',ret)
+        match = re.match(r'^([0-9.+-]+)([^\s]+)',ret)
         if (match == None):
             raise RuntimeError('Unexpected response: "{}"'.format(ret))
         else:
