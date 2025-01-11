@@ -223,7 +223,7 @@ class KAseries(SCPI):
             wait = self._wait
 
         
-        str = f'VSET{self.channel}:{voltage:.3f}'
+        str = f'VSET{self.channel}:{voltage:05.2f}'
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -245,7 +245,7 @@ class KAseries(SCPI):
         if wait is None:
             wait = self._wait
             
-        str = f'ISET{self.channel}:{current:.3f}'
+        str = f'ISET{self.channel}:{current:05.3f}'
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
