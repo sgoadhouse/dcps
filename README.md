@@ -22,6 +22,7 @@ As new power supplies are added, they should each have their own sub-package.
 
 Other contributors have added support for the following DC power supplies:
 * ITECH 6500C/D series 2 quadrant DC Power Supply/load
+* KORAD KA series *(tested with Velleman PS3005D)*
 
 In addition to the above traditional power supplies, a few other
 instruments have been added that have a similar control paradigm such

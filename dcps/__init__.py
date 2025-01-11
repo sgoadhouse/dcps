@@ -1,3 +1,5 @@
+# Custom warnings
+from Warnings import NotImplemented
 
 # Standard SCPI commands
 from dcps.SCPI import SCPI
@@ -35,3 +37,6 @@ from dcps.Keithley6500 import Keithley6500
 
 # Support of ITECH IT6500C series psus
 from dcps.IT6500C import IT6500C
+
+# Support of the KORAD KA-series psus
+from dcps.KoradKAseries import KAseries
