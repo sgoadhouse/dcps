@@ -35,7 +35,8 @@ try:
     from . import SCPI
 except ValueError:
     from SCPI import SCPI
-    
+
+import warnings
 from time import sleep
 import pyvisa as visa
 import re
@@ -51,13 +52,16 @@ class AimTTiPLP(SCPI):
     only minimally adhere to the command standards.
     """
 
-    def __init__(self, resource, wait=1.0, verbosity=0, **kwargs):
+    def __init__(self, resource, wait=1.0, verbosity=0, warn=True, rewrite=True, **kwargs):
         """Init the class with the instruments resource string
 
-        resource  - resource string or VISA descriptor, like TCPIP0::192.168.1.100::9221::SOCKET 
-        wait      - float that gives the default number of seconds to wait after sending each command
-        verbosity - verbosity output - set to 0 for no debug output
-        kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
+        resource        - Resource string or VISA descriptor, like TCPIP0::192.168.1.100::9221::SOCKET 
+        wait            - float that gives the default number of seconds to wait after sending each command
+        verbosity       - verbosity output - set to 0 for no debug output
+        warn            - Warn about resource string using VXI-11 and/or automatic rewrites. Default True
+                          Will throw a UserWarning when detecting VXI-11 resource string or auto-rewriting the resource string
+        rewrite         - Automatically rewrite the VXI-11 resource string to a raw socket. Default True
+        kwargs          - other named options to pass when PyVISA open() like open_timeout=2.0
 
         NOTE: This instrument only implements enough VXI-11 to support the discovery protocol
         It ignores any writes to it, and returns an *IDN? style response to any read from the device.
@@ -71,8 +75,17 @@ class AimTTiPLP(SCPI):
         """
 
         if resource.startswith('TCPIP') and not resource.endswith('SOCKET'):
-            ip = resource.split('::')[1]
-            resource = f'TCPIP::{ip}::9221::SOCKET'
+            if rewrite:
+                ip = resource.split('::')[1]
+                old_resource = resource
+                resource = f'TCPIP::{ip}::9221::SOCKET'
+                warn_msg = f'Auto re-wrote resource string from {old_resource} to {resource}. See manual on VXI-11 implementation'
+            else:
+                warn_msg = 'These Aim TTI PSUs only implement auto-discovery in VXI-11. Please refer to the manual of the PSU'
+            
+            if warn:
+                warnings.warn(warn_msg, stacklevel=2)
+
 
         super(AimTTiPLP, self).__init__(resource, max_chan=3, wait=wait,
                                         cmd_prefix='',
