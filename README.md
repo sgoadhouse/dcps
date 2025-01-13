@@ -9,7 +9,7 @@ following DC power supplies:
 
 * Rigol DP800 series *(tested with DP832A)*
 * Aim TTi PL-P series *(tested with PL303QMD-P)*
-   * Aim TTi CPX series *(tested by a contributor with CPX400D)*
+   * Aim TTi CPX series *(tested by a contributor with CPX400DP)*
 * BK Precision 9115 series *(tested with 9115)*
 * Agilent/Keysight E364xA series  *(tested with E3642A)*
 
