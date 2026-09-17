@@ -49,11 +49,12 @@ class Keithley6500(SCPI):
         'setMeasureCurrentRange':        'SENSe{:1d}:CURRent:RANGe {}', # removed format of value so can use DEF/MIN/MAX
     }
 
-    def __init__(self, resource, wait=0.01, verbosity=0, **kwargs):
+    def __init__(self, resource, max_chan=1, wait=0.01, verbosity=0, **kwargs):
         """Init the class with the instruments resource string
 
-        resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
-        wait     - float that gives the default number of seconds to wait after sending each command
+        resource  - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
+        max_chan  - maximum channels (1 for DMM6500, 299 for DAQ6510)
+        wait      - float that gives the default number of seconds to wait after sending each command
         verbosity - verbosity output - set to 0 for no debug output
         kwargs    - other named options to pass when PyVISA open() like open_timeout=2.0
         """
@@ -74,7 +75,7 @@ class Keithley6500(SCPI):
         # default measurement function if not supplied as parameter into the method
         self._functionStr = None
         
-        super(Keithley6500, self).__init__(resource, max_chan=1, wait=wait, cmd_prefix=':',
+        super(Keithley6500, self).__init__(resource, max_chan=max_chan, wait=wait, cmd_prefix=':',
                                            verbosity = verbosity,
                                            read_termination = '\n',
                                            query_delay=0.01,
@@ -84,7 +85,7 @@ class Keithley6500(SCPI):
         return self._functions
 
     def _handleMeasureFunction(self,function,methodName,allowedCmdFunctions=None):
-        """Process the passed-in measure/sense function name and return the Funciton Command String to use"""
+        """Process the passed-in measure/sense function name and return the Function Command String to use"""
 
         if (function is None):
             # Ask the instrument what function is the current one
@@ -166,6 +167,11 @@ class Keithley6500(SCPI):
         # NOTE: Unsupported command by this device. However,
         # instead of raising an exception and breaking any scripts,
         # simply return False as there is NO output for the DMM6500.
+        #
+        # However, if channel is not None, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
         return False
 
     def outputOn(self, channel=None, wait=None):
@@ -177,6 +183,11 @@ class Keithley6500(SCPI):
         # NOTE: Unsupported command by this device. However,
         # instead of raising an exception and breaking any scripts,
         # simply return quietly.
+        #
+        # However, if channel is not None, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
         pass
         
     def outputOff(self, channel=None, wait=None):
@@ -187,6 +198,11 @@ class Keithley6500(SCPI):
         # NOTE: Unsupported command by this device. However,
         # instead of raising an exception and breaking any scripts,
         # simply return quietly.
+        #
+        # However, if channel is not None, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
         pass
 
     def outputOnAll(self, wait=None):
@@ -215,6 +231,11 @@ class Keithley6500(SCPI):
         # NOTE: Unsupported command by this device. However,
         # instead of raising an exception and breaking any scripts,
         # simply return True as the "INPUT" is always On for the DMM6500.
+        #
+        # However, if channel is not None, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
         return True
 
     def inputOn(self, channel=None, wait=None):
@@ -226,6 +247,11 @@ class Keithley6500(SCPI):
         # NOTE: Unsupported command by this device. However,
         # instead of raising an exception and breaking any scripts,
         # simply return quietly.
+        #
+        # However, if channel is not None, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
         pass
 
     def inputOff(self, channel=None, wait=None):
@@ -236,6 +262,11 @@ class Keithley6500(SCPI):
         # NOTE: Unsupported command by this device. However,
         # instead of raising an exception and breaking any scripts,
         # simply return quietly.
+        #
+        # However, if channel is not None, make it the current channel
+        if channel is not None:
+            self.channel = channel
+
         pass
 
     def inputOnAll(self, wait=None):
@@ -306,6 +337,33 @@ class Keithley6500(SCPI):
                 message = message[:32]
             self._instWrite('DISP:USER2:TEXT "{}"'.format(message))
 
+
+    def closeChannel(self, channel=None, wait=None):
+        """If channel needs to close a relay before measurement, then do so
+
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        """
+            
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If a rear channel, must close it to make the measurement
+        if self.channel > 100:
+            str = 'ROUT:CLOSE (@{})'.format(self.channel)
+            print("   ROUT:CLOSE string: '{}'".format(str))
+            self._instWrite(str)
+
+            
     def setMeasureFunction(self, function, channel=None, wait=None):
         """Set the Measure Function for channel
 
@@ -334,11 +392,31 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        str = 'SENS{}:FUNC:ON "{}"'.format(self.channel, functionCmdStr)            
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:FUNC:ON "{}", (@{})'.format(functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('setMeasureFunction(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:FUNC:ON "{}"'.format(self.channel, functionCmdStr)            
+        
         #@@@#print("   setMeasureFunction() string: '{}'".format(str))
         
         self._instWrite(str)
 
+    def queryMeasureFunction(self, channel=None, query_delay=None):
+        """Return what FUNCTION is the current one for measuring/sensing
+        
+        channel     - number of the channel starting at 1
+        query_delay - number of seconds to wait between write and
+                      reading for read data (None uses default seconds)
+        """
+
+        #@@@@@# MUST REWRITE THIS FOR DMM6500 and DAQ6510 - append ' (@<channelList>)' to query command if channel > 1
+        
+        return self.fetchGenericString(self._Cmd('queryMeasureFunction'), channel, query_delay)
+    
     def setAutoZero(self, on, function=None, channel=None, wait=None):
         """Enable or Disable the AutoZero mode for the function
 
@@ -361,7 +439,15 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        str = 'SENS{}:{}:AZERo:STATe {}'.format(self.channel, functionCmdStr, self._bool2onORoff(on))
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AZERo:STATe {}, (@{})'.format(functionCmdStr, self._bool2onORoff(on), self.channel)
+        elif self.channel != 1:
+            raise ValueError('setAutoZero(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AZERo:STATe {}'.format(self.channel, functionCmdStr, self._bool2onORoff(on))
+            
         #@@@#print('AutoZero State String: {}'.format(str))
 
         self._instWrite(str)
@@ -386,7 +472,15 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        str = 'SENS{}:AZERo:ONCE'.format(self.channel)
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:AZERo:ONCE'
+        elif self.channel != 1:
+            raise ValueError('autoZeroOnce(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:AZERo:ONCE'.format(self.channel)
+            
         #@@@#print('AutoZero Once String: {}'.format(str))
 
         self._instWrite(str)
@@ -418,11 +512,22 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        if (offset is None):
-            ## Have the instrument acquire the relative offset
-            str = 'SENS{}:{}:REL:ACQuire'.format(self.channel, functionCmdStr)
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            if (offset is None):
+                ## Have the instrument acquire the relative offset
+                str = 'SENS:{}:REL:ACQuire'.format(functionCmdStr)
+            else:
+                str = 'SENS:{}:REL {}, (@{})'.format(functionCmdStr, offset, self.channel)
+        elif self.channel != 1:
+            raise ValueError('setRelativeOffset(): "{}" is an invalid channel number.'.format(self.channel))
         else:
-            str = 'SENS{}:{}:REL {}'.format(self.channel, functionCmdStr, offset)
+            if (offset is None):
+                ## Have the instrument acquire the relative offset
+                str = 'SENS{}:{}:REL:ACQuire'.format(self.channel, functionCmdStr)
+            else:
+                str = 'SENS{}:{}:REL {}'.format(self.channel, functionCmdStr, offset)
 
         #@@@#print('Relative Offset String: {}'.format(str))
 
@@ -453,8 +558,15 @@ class Keithley6500(SCPI):
             wait = self._wait
 
 
-        str = 'SENS{}:{}:REL?'.format(self.channel, functionCmdStr)
-
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:REL? (@{})'.format(self.channel, functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryRelativeOffset(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:REL?'.format(self.channel, functionCmdStr)
+            
         #@@@#print('Relative Offset Query String: {}'.format(str))
 
         offset = self._instQuery(str)
@@ -485,7 +597,14 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        str = 'SENS{}:{}:REL:STATe {}'.format(self.channel, functionCmdStr, self._bool2onORoff(on))
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:REL:STATe {}, (@{})'.format(functionCmdStr, self._bool2onORoff(on), self.channel)
+        elif self.channel != 1:
+            raise ValueError('setRelativeOffsetState(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:REL:STATe {}'.format(self.channel, functionCmdStr, self._bool2onORoff(on))
 
         #@@@#print('Relative Offset State String: {}'.format(str))
 
@@ -516,7 +635,14 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        str = 'SENS{}:{}:NPLC {}'.format(self.channel, functionCmdStr, nplc)
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:NPLC {}, (@{})'.format(functionCmdStr, nplc, self.channel)
+        elif self.channel != 1:
+            raise ValueError('setIntegrationTime(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:NPLC {}'.format(self.channel, functionCmdStr, nplc)
 
         #@@@#print('Integration Time String: {}'.format(str))
 
@@ -546,7 +672,14 @@ class Keithley6500(SCPI):
             wait = self._wait
 
 
-        str = 'SENS{}:{}:NPLC?'.format(self.channel, functionCmdStr)
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:NPLC? (@{})'.format(functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryIntegrationTime(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:NPLC?'.format(self.channel, functionCmdStr)
 
         #@@@#print('Integration Time Query String: {}'.format(str))
 
@@ -604,6 +737,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="VoltageDC",channel=channel)
+        self.closeChannel()
 
         #@@@#vals = self._instQuery('READ?').split(',')
         val = self._instQuery('READ?',delay=query_delay)        
@@ -617,6 +751,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="VoltageAC",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)
         return float(val)
@@ -628,6 +763,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="CurrentDC",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -639,6 +775,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="CurrentAC",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -650,6 +787,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Resistance2W",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -661,6 +799,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Resistance4W",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -672,6 +811,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Diode",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -683,6 +823,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Capacitance",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -694,6 +835,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Temperature",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -705,6 +847,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Continuity",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -716,6 +859,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Frequency",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -727,6 +871,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="Period",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
@@ -738,6 +883,7 @@ class Keithley6500(SCPI):
         """
 
         self.setMeasureFunction(function="VoltageRatio",channel=channel)
+        self.closeChannel()
 
         val = self._instQuery('READ?',delay=query_delay)        
         return float(val)
