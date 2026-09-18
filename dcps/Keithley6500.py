@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-# Copyright (c) 2018, 2021, 2023, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2018, 2021, 2023, 2026 Stephen Goadhouse <sgoadhouse@virginia.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -292,6 +292,33 @@ class Keithley6500(SCPI):
     # Commands Specific to DMM6500
     ###################################################################
 
+    def isRearTermEnabled(self, wait=None):
+        """Return true if the Rear Terminals are Enabled via the Terminal Select switch on the front, else false
+
+           wait       - number of seconds to wait after sending command        
+        """
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+        
+        str = 'ROUT:TERM?'
+        ans = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        # strip out any whitespace
+        ans = ans.strip()
+        # and make sure uppercase
+        ans = ans.upper()
+
+        if ans == 'REAR':
+            return True
+        else:        
+            return False
+
+    
     def displayMessageOn(self, top=True):
         """Enable Display Message
            NOTE: using same format as from Keithley622x.py but this one works a little differently
@@ -927,7 +954,10 @@ if __name__ == '__main__':
     dmm.displayMessageOn()
     sleep(2.0)
 
-    dmm.setDisplayMessage('New Top Message', top=True)
+    if dmm.isRearTermEnabled():
+        dmm.setDisplayMessage('Using REAR Terminals', top=True)
+    else:
+        dmm.setDisplayMessage('Using Front Terminals', top=True)
     dmm.setDisplayMessage('New Bottom Message', top=False)
     sleep(2.0)
 
@@ -937,6 +967,11 @@ if __name__ == '__main__':
     if not dmm.isInputOn(args.chan):
         dmm.inputOn()
 
+    if dmm.isRearTermEnabled():
+        print("REAR  Terminals are being used for the following test\n")
+    else:
+        print("FRONT Terminals are being used for the following test\n")
+        
     dmm.measureVoltage()
     dmm.setAutoZero(False)
     dmm.setAutoZero(False,function='CurrentDC')
