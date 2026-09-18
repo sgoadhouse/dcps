@@ -315,8 +315,10 @@ class Keithley6500(SCPI):
 
         if ans == 'REAR':
             return True
-        else:        
+        elif ans == 'FRON':
             return False
+        else:        
+            raise ValueError('isRearTermEnabled(): "{}" is an unknown response from the instrument.'.format(ans))
 
     
     def displayMessageOn(self, top=True):
