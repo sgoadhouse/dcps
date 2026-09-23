@@ -37,6 +37,8 @@ are supported are:
 * Keithley/Tektronix 622x series Precision Current Source  *(tested with 6220)*
 * Keithley/Tektronix 2182/2182A Nanovoltmeter  *(tested with 2182A)*
 * Keithley/Tektronix 2400 series SourceMeter  *(tested with 2400)*
+* Keithley/Tektronix DMM6500 Multimeter
+* Keithley/Tektronix DAQ6510 Data Acquisition and Multimeter System
 
 
 # Installation
@@ -123,6 +125,8 @@ can be set and used as the VISA resource string.
 * for Keithley 622x, it is `K622X_VISA`
 * for Keithley 2182, it is `K2182_VISA`
 * for Keithley 24xx, it is `K2400_VISA`
+* for Keithley DMM6500, it is `DMM6500_VISA`
+* for Keithley DAQ6510, it is `DAQ6510_VISA`
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource
@@ -179,6 +183,10 @@ various supported power supplies and related equipment, see:
 * Keithley/Tektronix 622x: [Model 6220 DC Current Source Model 6221 AC and DC Current Source User's Manual](https://www.tek.com/product-series/ultra-sensitive-current-sources-series-6200-manual/model-6220-dc-current-source-model)
 * Keithley/Tektronix 2182/2182A Nanovoltmeter: [Models 2182 and 2182A Nanovoltmeter User's Manual](https://www.tek.com/keithley-low-level-sensitive-and-specialty-instruments/keithley-nanovoltmeter-model-2182a-manual/models-2182-and-2182a-nanovoltmeter-users-manual)
 * Keithley/Tektronix 2400 series SourceMeter: [Series 2400 SourceMeter User's Manual](https://download.tek.com/manual/2400S-900-01_K-Sep2011_User.pdf)
+* Keithley/Tektronix DMM6500 Multimeter: [DMM6500 Multimeter User's Manual](https://www.tek.com/-/media/files/dmm6500-900-01b_user_aug_2019.pdf)
+* Keithley/Tektronix DAQ6510 Data Acquisition and Multimeter System: [DAQ6510 Reference Manual](https://www.tek.com/en/sitewide-content/manuals/m/o/d/model-daq6510-data-acquisition-and-multimeter-system-reference-manual)
+
+
 
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the
