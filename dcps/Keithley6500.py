@@ -45,6 +45,7 @@ class Keithley6500(SCPI):
 
     ## Dictionary to translate SCPI commands for this device
     _xlateCmdTbl = {
+        'setMeasureFunction':            'SENse:FUNCtion "{}"',         # Adding double quotes around the function name
         'setMeasureVoltageRange':        'SENSe{:1d}:VOLTage:RANGe {}', # removed format of value so can use DEF/MIN/MAX
         'setMeasureCurrentRange':        'SENSe{:1d}:CURRent:RANGe {}', # removed format of value so can use DEF/MIN/MAX
     }
@@ -389,10 +390,106 @@ class Keithley6500(SCPI):
         # If a rear channel, must close it to make the measurement
         if self.channel > 100:
             str = 'ROUT:CLOSE (@{})'.format(self.channel)
-            print("   ROUT:CLOSE string: '{}'".format(str))
+            #@@@#print("   ROUT:CLOSE string: '{}'".format(str))
             self._instWrite(str)
 
             
+    def openChannel(self, channel=None, wait=None):
+        """If channel needs to open a relay after measurement, then do so
+
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        """
+            
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If a rear channel, must close it to make the measurement
+        if self.channel > 100:
+            str = 'ROUT:OPEN (@{})'.format(self.channel)
+            #@@@#print("   ROUT:OPEN string: '{}'".format(str))
+            self._instWrite(str)
+            sleep(wait)             # give some time for device to respond
+
+            
+    def openChannelAll(self, wait=None):
+        """Open All channels on all slots, like at the end of a script before closing
+
+           wait       - number of seconds to wait after sending command
+
+        """
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'ROUT:OPEN:ALL'
+        #@@@#print("   ROUT:OPEN:ALL string: '{}'".format(str))
+        self._instWrite(str)
+
+
+    def queryCardIDN(self, channel=None, query_delay=None):
+        """Return the IDN of the card slot of the channel. Return as a list
+           with the string broken into parts based on commas. 
+           If channel is not from a slot, return None.
+
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # so determine the slot number
+        if self.channel > 100:
+            qryString = "SYST:CARD{:1d}:IDN?".format(self.channel // 100)
+        elif self.channel != 1:
+            raise ValueError('queryCardIDN(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            # This channel is not from a card, so return None
+            return None
+
+        #@@@#print("   queryCardIDN() string: '{}'".format(qryString))
+        
+        ret = self._instQuery(qryString, delay=query_delay)
+        #@@@#print("   queryCardIDN() returned: '{}'".format(ret))
+        return ret.split(',')
+
+
+    def isCurrentCapableCard(self, cardModel):
+        """Return False if cardModel matches a model number of a known card
+           that cannot handle current measurements. This is not an
+           extensive list, currently. Otherwise, return True.
+
+           cardModel  - model string of the card, e.g. 7708
+
+        """
+
+        ## First check that cardModel is a string
+        if not isinstance(cardModel,str):
+            raise TypeError('isCurrentCapableCard(): cardModel parameter, "{}", must be a string.'.format(cardModel))
+        
+        ## This list will be updated as other non-current modules are discovered
+        if cardModel in ['7701', '7705', '7708', '7710']:
+            return False
+        else:
+            return True
+        
+        
     def setMeasureFunction(self, function, channel=None, wait=None):
         """Set the Measure Function for channel
 
@@ -421,15 +518,16 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
+        # Lookup setMeasureFunction string
+        str = self._Cmd('setMeasureFunction').format(functionCmdStr)
+            
         # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
         # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
         if self.channel > 100:
-            str = 'SENS:FUNC:ON "{}", (@{})'.format(functionCmdStr, self.channel)
+            str += ', (@{})'.format(self.channel)
         elif self.channel != 1:
             raise ValueError('setMeasureFunction(): "{}" is an invalid channel number.'.format(self.channel))
-        else:
-            str = 'SENS{}:FUNC:ON "{}"'.format(self.channel, functionCmdStr)            
-        
+            
         #@@@#print("   setMeasureFunction() string: '{}'".format(str))
         
         self._instWrite(str)
@@ -442,9 +540,26 @@ class Keithley6500(SCPI):
                       reading for read data (None uses default seconds)
         """
 
-        #@@@@@# MUST REWRITE THIS FOR DMM6500 and DAQ6510 - append ' (@<channelList>)' to query command if channel > 1
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # Lookup queryMeasureFunction string
+        qryString = self._Cmd('queryMeasureFunction')            
+            
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            qryString += ' (@{})'.format(self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryMeasureFunction(): "{}" is an invalid channel number.'.format(self.channel))
+
+        #@@@#print("   queryMeasureFunction() string:   '{}'".format(qryString))
         
-        return self.fetchGenericString(self._Cmd('queryMeasureFunction'), channel, query_delay)
+        ret = self._instQuery(qryString, delay=query_delay)
+        #@@@#print("   queryMeasureFunction() returned: '{}'".format(ret))
+        return ret
     
     def setAutoZero(self, on, function=None, channel=None, wait=None):
         """Enable or Disable the AutoZero mode for the function
@@ -501,14 +616,8 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
-        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
-        if self.channel > 100:
-            str = 'SENS:AZERo:ONCE'
-        elif self.channel != 1:
-            raise ValueError('autoZeroOnce(): "{}" is an invalid channel number.'.format(self.channel))
-        else:
-            str = 'SENS{}:AZERo:ONCE'.format(self.channel)
+        # No channel is used or needed
+        str = 'SENS:AZERo:ONCE'
             
         #@@@#print('AutoZero Once String: {}'.format(str))
 
@@ -590,7 +699,7 @@ class Keithley6500(SCPI):
         # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
         # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
         if self.channel > 100:
-            str = 'SENS:{}:REL? (@{})'.format(self.channel, functionCmdStr, self.channel)
+            str = 'SENS:{}:REL? (@{})'.format(functionCmdStr, self.channel)
         elif self.channel != 1:
             raise ValueError('queryRelativeOffset(): "{}" is an invalid channel number.'.format(self.channel))
         else:
@@ -718,10 +827,11 @@ class Keithley6500(SCPI):
 
         return float(offset)
 
-    ## Can use setMeasureVoltageRange()/setMeasureCurrentRange()
-    ## inherited from SCPI.py. This method is here to support the
+    ## Although setMeasureVoltageRange()/setMeasureCurrentRange() can
+    ## be inherited from SCPI.py, this method is here to support the
     ## other functions of the DMM9500 using the multiple function
-    ## parameter format. Voltage and Current can be used here too.
+    ## parameter format. Voltage and Current can be used here
+    ## too. Also, handles channelList for the 6510.
     def setMeasureRange(self, upper, function=None, channel=None, wait=None):
         """Set the measurement range for the selected function and channel
 
@@ -734,15 +844,47 @@ class Keithley6500(SCPI):
         functionCmdStr = self._handleMeasureFunction(function,"setMeasureRange()",
                                                      ['VOLT:DC','VOLT:AC','CURR:DC','CURR:AC','RES','FRES','CAP','VOLT:DC:RAT',])
         
-        cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO {}'
-        cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe {}'
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            # For cards, get an error if do not first select the function, if it is passed in
+            if function is not None: self.setMeasureFunction(function)
+            cmdAuto =  'SENSe:' + functionCmdStr + ':RANGe:AUTO {1}, (@{0:d})'
+            cmdRange = 'SENSe:' + functionCmdStr + ':RANGe {1}, (@{0:d})'
+        elif self.channel != 1:
+            raise ValueError('setMeasureRange(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            cmdAuto =  'SENSe{0:1d}:' + functionCmdStr + ':RANGe:AUTO {1}'
+            cmdRange = 'SENSe{0:1d}:' + functionCmdStr + ':RANGe {1}'
         
         self.setGenericRange(upper, cmdAuto, cmdRange, channel, wait)
-    
-    ## Can use queryMeasureVoltageRange()/queryMeasureCurrentRange()
-    ## inherited from SCPI.py. This method is here to support the
-    ## other functions of the DMM9500 using the multiple function
-    ## parameter format. Voltage and Current can be used here too.
+
+    def setMeasureVoltageRange(self, upper, channel=None, wait=None):
+        """Set the measurement voltage range for channel
+
+           upper    - floating point value for upper voltage range, set to None for AUTO
+           channel  - number of the channel starting at 1
+           wait     - number of seconds to wait after sending command
+        """
+
+        self.setMeasureRange(upper=upper,function='VoltageDC',channel=channel,wait=wait)
+
+    def setMeasureCurrentRange(self, upper, channel=None, wait=None):
+        """Set the measurement current range for channel
+
+           upper    - floating point value for upper current range, set to None for AUTO
+           channel  - number of the channel starting at 1
+           wait     - number of seconds to wait after sending command
+        """
+
+        self.setMeasureRange(upper=upper,function='CurrentDC',channel=channel,wait=wait)
+            
+    ## Although queryMeasureVoltageRange()/queryMeasureCurrentRange()
+    ## is in SCPI.py, this method is here to support the other
+    ## functions of the DMM9500 using the multiple function parameter
+    ## format. Voltage and Current can be used here too. Also, handles
+    ## channelList for the 6510.
     def queryMeasureRange(self, function=None, channel=None):
         """Query the measurement range for selected function and channel
 
@@ -753,12 +895,37 @@ class Keithley6500(SCPI):
         functionCmdStr = self._handleMeasureFunction(function,"queryMeasureRange()",
                                                      ['VOLT:DC','VOLT:AC','CURR:DC','CURR:AC','RES','FRES','CAP','VOLT:DC:RAT',])
 
-        cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO?'
-        cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe?'
 
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            cmdAuto =  'SENSe:' + functionCmdStr + ':RANGe:AUTO? (@{:d})'
+            cmdRange = 'SENSe:' + functionCmdStr + ':RANGe? (@{:d})'
+        elif self.channel != 1:
+            raise ValueError('queryMeasureRange(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            cmdAuto =  'SENSe{:1d}:' + functionCmdStr + ':RANGe:AUTO?'
+            cmdRange = 'SENSe{:1d}:' + functionCmdStr + ':RANGe?'
+            
         return self.queryGenericRange(cmdAuto, cmdRange, channel)
 
+    def queryMeasureVoltageRange(self, channel=None):
+        """Query the measurement voltage range for channel
 
+           channel  - number of the channel starting at 1
+        """
+
+        return self.queryMeasureRange(function='VoltageDC', channel=channel)
+
+    def queryMeasureCurrentRange(self, channel=None):
+        """Query the measurement current range for channel
+
+           channel  - number of the channel starting at 1
+        """
+
+        return self.queryMeasureRange(function='CurrentDC', channel=channel)
+
+    
     def measureVoltage(self, channel=None, query_delay=None):
         """Read and return a DC Voltage measurement from channel
         
