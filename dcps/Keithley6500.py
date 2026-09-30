@@ -438,6 +438,68 @@ class Keithley6500(SCPI):
         self._instWrite(str)
 
 
+    def setChannelDelay(self, delay,channel=None, wait=None):
+        """Set a channel delay to wait after closing the channel for signal to settle before acquiring.
+           This is only for channels that can be opened or closed like slot channels.
+
+           delay      - real number that is the desired delay in seconds
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        """
+            
+        r# If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        if self.channel > 100:
+            str = 'ROUT:DEL {}, (@{})'.format(delay,self.channel)
+            #@@@#print("   ROUT:DEL string: '{}'".format(str))
+            self._instWrite(str)
+            sleep(wait)             # give some time for device to respond
+
+    def queryChannelDelay(self, channel=None, wait=None):
+        """Query the channel delay setting.
+           This is only for channels that can be opened or closed like slot channels.
+
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # only if channel > 100, can it be used here
+        if self.channel > 100:
+            str = 'ROUT:DEL? (@{})'.format(self.channel)
+        else:
+            raise ValueError('queryChannelDelay(): "{}" is an invalid channel number.'.format(self.channel))
+            
+        #@@@#print('Channel Delay Query String: {}'.format(str))
+
+        delay = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        return float(delay)
+            
+        
     def queryCardIDN(self, channel=None, query_delay=None):
         """Return the IDN of the card slot of the channel. Return as a list
            with the string broken into parts based on commas. 
