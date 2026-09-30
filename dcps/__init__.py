@@ -1,5 +1,5 @@
 # Custom warnings
-from Warnings import NotImplemented
+from dcps.Warnings import NotImplemented
 
 # Standard SCPI commands
 from dcps.SCPI import SCPI
