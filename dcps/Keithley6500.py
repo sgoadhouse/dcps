@@ -448,7 +448,7 @@ class Keithley6500(SCPI):
 
         """
             
-        r# If a channel number is passed in, make it the
+        # If a channel number is passed in, make it the
         # current channel
         if channel is not None:
             self.channel = channel
@@ -500,6 +500,165 @@ class Keithley6500(SCPI):
         return float(delay)
             
         
+    def _setChannelConnectRule(self, rule, wait=None):
+        """Set the channel connect rule to either BBM, MBB or CONC for all channels.
+           This is only for channels that can be opened or closed like slot channels.
+           Use the following helper functions to set the value from public code.
+
+           rule       - a string for the desired rule: BBM, MBB or CONC
+           wait       - number of seconds to wait after sending command
+
+        BBM  = Break Before Make
+        MBB  = Make Before Break
+        CONC = Concurrent - instrument decides which is most efficient
+
+        """
+            
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # Process the rule
+        # make it all upper case to make matching easier
+        rule = rule.upper()
+        if rule != 'BBM' and rule != 'MBB' and rule != 'CONC':
+            raise ValueError('_setChannelConnectRule(): "{}" is an invalid channel connection rule.'.format(rule))
+            
+        str = 'ROUT:CONN:RULE ' + rule
+        #@@@#print("   ROUT:CONN:RULE string: '{}'".format(str))
+        self._instWrite(str)
+        sleep(wait)             # give some time for device to respond
+
+
+    def setChannelConnectRuleBBM(self, wait=None):
+        """Set the channel connect rule to BBM, Break Before Make, for all channels.
+           This is only for channels that can be opened or closed like slot channels.
+
+           wait       - number of seconds to wait after sending command
+        """
+
+        self._setChannelConnectRule('BBM', wait)
+
+    def setChannelConnectRuleMBB(self, wait=None):
+        """Set the channel connect rule to MBB, Make Before Break, for all channels.
+           This is only for channels that can be opened or closed like slot channels.
+
+           wait       - number of seconds to wait after sending command
+        """
+
+        self._setChannelConnectRule('MBB', wait)
+        
+            
+    def setChannelConnectRuleCONC(self, wait=None):
+        """Set the channel connect rule to CONC, Concurrent (instrument chooses), for all channels.
+           This is only for channels that can be opened or closed like slot channels.
+
+           wait       - number of seconds to wait after sending command
+        """
+
+        self._setChannelConnectRule('CONC', wait)
+
+    def queryChannelConnectRule(self, wait=None):
+        """Query the channel connection rule.
+
+           wait       - number of seconds to wait after sending command
+        """
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        str = 'ROUT:CONNECT:RULE?'
+            
+        #@@@#print('Channel Connection Rule Query String: {}'.format(str))
+
+        rule = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        return rule
+            
+
+    def setChannelLabel(self, label, channel=None, wait=None):
+        """Set a channel label shown on the instrument.
+           This is only for channels that can be opened or closed like slot channels.
+
+           label      - string that is a unique, 19 character label for the channel
+                        NOTE: it CANNOT start with a digit
+                        NOTE: to clear it, set to the empty string
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        """
+            
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # will let the instrument decide if the label is a valid string
+        if self.channel > 100:
+            str = 'ROUT:LAB {}, (@{})'.format(label,self.channel)
+            #@@@#print("   ROUT:LAB string: '{}'".format(str))
+            self._instWrite(str)
+            sleep(wait)             # give some time for device to respond
+
+
+    def clearChannelLabel(self, channel=None, wait=None):
+        """Clear the channel label to return to default label.
+           This is only for channels that can be opened or closed like slot channels.
+
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        """
+
+        self.setChannelLabel('', channel, wait)
+            
+    def queryChannelLabel(self, channel=None, wait=None):
+        """Query the channel label setting.
+           This is only for channels that can be opened or closed like slot channels.
+
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # only if channel > 100, can it be used here
+        if self.channel > 100:
+            str = 'ROUT:LAB? (@{})'.format(self.channel)
+        else:
+            raise ValueError('queryChannelLabel(): "{}" is an invalid channel number.'.format(self.channel))
+            
+        #@@@#print('Channel Label Query String: {}'.format(str))
+
+        label = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        return label
+            
+        
+    
     def queryCardIDN(self, channel=None, query_delay=None):
         """Return the IDN of the card slot of the channel. Return as a list
            with the string broken into parts based on commas. 
