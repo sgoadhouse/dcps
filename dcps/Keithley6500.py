@@ -456,10 +456,17 @@ class Keithley6500(SCPI):
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
-            wait = self._wait
-
+            wait = self._wait        
+            
         # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
         if self.channel > 100:
+            ## Discovered through testing that this command has NO
+            ## effect if the channel is already closed (sort of makes
+            ## sense but I did not see this mentioned in the manual).
+            ## So, first make sure the channel is OPEN before setting
+            ## this so that it takes effect on the next closing.
+            self.openChannel(channel, wait)
+            
             str = 'ROUT:DEL {}, (@{})'.format(delay,self.channel)
             #@@@#print("   ROUT:DEL string: '{}'".format(str))
             self._instWrite(str)
@@ -504,6 +511,7 @@ class Keithley6500(SCPI):
         """Set the channel connect rule to either BBM, MBB or CONC for all channels.
            This is only for channels that can be opened or closed like slot channels.
            Use the following helper functions to set the value from public code.
+           NOTE: This command requires firmware >= 1.7.14
 
            rule       - a string for the desired rule: BBM, MBB or CONC
            wait       - number of seconds to wait after sending command
@@ -524,7 +532,15 @@ class Keithley6500(SCPI):
         rule = rule.upper()
         if rule != 'BBM' and rule != 'MBB' and rule != 'CONC':
             raise ValueError('_setChannelConnectRule(): "{}" is an invalid channel connection rule.'.format(rule))
-            
+
+        ## Discovered through testing that the Channel Delay command
+        ## has NO effect if the channel is already closed (sort of
+        ## makes sense but I did not see this mentioned in the
+        ## manual).  So, assume that it is true with this command too
+        ## and open all channels first so that it takes effect on the
+        ## next closing.
+        self.openChannelAll(wait)
+        
         str = 'ROUT:CONN:RULE ' + rule
         #@@@#print("   ROUT:CONN:RULE string: '{}'".format(str))
         self._instWrite(str)
@@ -534,6 +550,7 @@ class Keithley6500(SCPI):
     def setChannelConnectRuleBBM(self, wait=None):
         """Set the channel connect rule to BBM, Break Before Make, for all channels.
            This is only for channels that can be opened or closed like slot channels.
+           NOTE: This command requires firmware >= 1.7.14
 
            wait       - number of seconds to wait after sending command
         """
@@ -543,6 +560,7 @@ class Keithley6500(SCPI):
     def setChannelConnectRuleMBB(self, wait=None):
         """Set the channel connect rule to MBB, Make Before Break, for all channels.
            This is only for channels that can be opened or closed like slot channels.
+           NOTE: This command requires firmware >= 1.7.14
 
            wait       - number of seconds to wait after sending command
         """
@@ -553,6 +571,7 @@ class Keithley6500(SCPI):
     def setChannelConnectRuleCONC(self, wait=None):
         """Set the channel connect rule to CONC, Concurrent (instrument chooses), for all channels.
            This is only for channels that can be opened or closed like slot channels.
+           NOTE: This command requires firmware >= 1.7.14
 
            wait       - number of seconds to wait after sending command
         """
@@ -561,6 +580,7 @@ class Keithley6500(SCPI):
 
     def queryChannelConnectRule(self, wait=None):
         """Query the channel connection rule.
+           NOTE: This command requires firmware >= 1.7.14
 
            wait       - number of seconds to wait after sending command
         """
@@ -570,7 +590,9 @@ class Keithley6500(SCPI):
         if wait is None:
             wait = self._wait
 
-        str = 'ROUT:CONNECT:RULE?'
+        self.openChannelAll(wait)
+            
+        str = 'ROUT:CHAN:CONN:RULE?'
             
         #@@@#print('Channel Connection Rule Query String: {}'.format(str))
 
@@ -606,7 +628,7 @@ class Keithley6500(SCPI):
         # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
         # will let the instrument decide if the label is a valid string
         if self.channel > 100:
-            str = 'ROUT:LAB {}, (@{})'.format(label,self.channel)
+            str = 'ROUT:LAB "{}", (@{})'.format(label,self.channel)
             #@@@#print("   ROUT:LAB string: '{}'".format(str))
             self._instWrite(str)
             sleep(wait)             # give some time for device to respond
@@ -1048,6 +1070,351 @@ class Keithley6500(SCPI):
 
         return float(offset)
 
+    def setAverageCount(self, count, function=None, channel=None, wait=None):
+        """Set the number of measureents that are averaged when filtering is enabled
+
+           count      - number of readings required for each filtered measurement (1 to 100)
+                        count can also be "DEF" for default, "MAX" for maximum or "MIN" for minimum
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"setAverageCount()")
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:COUN {}, (@{})'.format(functionCmdStr, count, self.channel)
+        elif self.channel != 1:
+            raise ValueError('setAverageCount(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:COUN {}'.format(self.channel, functionCmdStr, count)
+
+        #@@@#print('Average Count String: {}'.format(str))
+
+        self._instWrite(str)
+
+        sleep(wait)             # give some time for device to respond
+        
+        
+    def queryAverageCount(self, function=None, channel=None, wait=None):
+        """Query the Average Count setting for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"queryAverageCount()")
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:COUN? (@{})'.format(functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryAverageCount(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:COUN?'.format(self.channel, functionCmdStr)
+            
+        #@@@#print('Average Count Query String: {}'.format(str))
+
+        count = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        return float(count)
+    
+    def setAverageState(self, on, function=None, channel=None, wait=None):
+        """Set the state (enable or disable) the averaging filter for measurements for the function
+
+           on         - set to True to Enable use of Averaging Filter or False to Disable it
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"setAverageState()")
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:STATe {}, (@{})'.format(functionCmdStr, self._bool2onORoff(on), self.channel)
+        elif self.channel != 1:
+            raise ValueError('setAverageState(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:STATe {}'.format(self.channel, functionCmdStr, self._bool2onORoff(on))
+
+        #@@@#print('Average Filter State String: {}'.format(str))
+
+        self._instWrite(str)
+
+        sleep(wait)             # give some time for device to respond
+
+    def queryAverageState(self, function=None, channel=None, wait=None):
+        """Query the Average State setting (enable or disable) for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"queryAverageState()")
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:STAT? (@{})'.format(functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryAverageState(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:STAT?'.format(self.channel, functionCmdStr)
+            
+        #@@@#print('Average State Query String: {}'.format(str))
+
+        ret = self._instQuery(str)
+
+        #@@@#sleep(wait)             # give some time for device to respond
+        
+        return self._onORoff_1OR0_yesORno(ret)    
+        
+    def _setAverageType(self, type, function=None, channel=None, wait=None):
+        """Set the type of the averaging filter for the function
+           Use the following helper functions to set the value from public code.
+
+           type       - type string: "REP", "MOV" or "HYBR"
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+
+        REP  = Repeating filter [typically what you want]
+        MOV  = Moving filter [may not work for channels in slots]
+        HYBR = Hybrid filter [only available if the buffer style is set to FULL]
+        """
+        
+        functionCmdStr = self._handleMeasureFunction(function,"_setAverageType()")
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # make the type string all upper case letters for simplicity
+        type = type.upper()
+            
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:TCON {}, (@{})'.format(functionCmdStr, type, self.channel)
+        elif self.channel != 1:
+            raise ValueError('_setAverageType(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:TCON {}'.format(self.channel, functionCmdStr, type)
+
+        
+        #@@@#print("   Average Type string: '{}'".format(str))
+        self._instWrite(str)
+        sleep(wait)             # give some time for device to respond
+
+
+    def setAverageTypeREP(self, function=None, channel=None, wait=None):
+        """Set the averaging filter type to REP for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        self._setAverageType('REP', function, channel, wait)
+
+    def setAverageTypeMOV(self, function=None, channel=None, wait=None):
+        """Set the averaging filter type to MOV for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        self._setAverageType('MOV', function, channel, wait)
+
+    def setAverageTypeHYBR(self, function=None, channel=None, wait=None):
+        """Set the averaging filter type to HYBR for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        self._setAverageType('HYBR', function, channel, wait)
+
+    def queryAverageType(self, function=None, channel=None, wait=None):
+        """Query the Averaging Filter Type setting for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"queryAverageType()")
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:TCON? (@{})'.format(functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryAverageType(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:TCON?'.format(self.channel, functionCmdStr)
+            
+        #@@@#print('Average Type Query String: {}'.format(str))
+
+        ret = self._instQuery(str)
+
+        #@@@#sleep(wait)             # give some time for device to respond
+        
+        return ret
+        
+    def setAverageWindow(self, window, function=None, channel=None, wait=None):
+        """Set the window for the averaging filter for the function
+
+           window     - percentage of range for filter window setting between 0 and 10
+                        window can also be "DEF" for default, "MAX" for maximum or "MIN" for minimum
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"setAverageWindow()")
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:WIND {}, (@{})'.format(functionCmdStr, window, self.channel)
+        elif self.channel != 1:
+            raise ValueError('setAverageWindow(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:WIND {}'.format(self.channel, functionCmdStr, window)
+
+        #@@@#print('Average Window String: {}'.format(str))
+
+        self._instWrite(str)
+
+        sleep(wait)             # give some time for device to respond
+        
+        
+    def queryAverageWindow(self, function=None, channel=None, wait=None):
+        """Query the Window Setting for the Average filter for the Function
+
+           function   - a key from self._functions{} to select the measurement function or None for default
+           channel    - number of the channel starting at 1
+           wait       - number of seconds to wait after sending command
+        """
+
+        functionCmdStr = self._handleMeasureFunction(function,"queryAverageWindow()")
+
+                    
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+
+        # If a wait time is NOT passed in, set wait to the
+        # default time
+        if wait is None:
+            wait = self._wait
+
+
+        # channel is either 1 for front panel, 101-1xx for the rear Slot 1 or 201-2xx for the rear Slot 2
+        # If channel > 100, it is a rear slot channel and needs to be formatted like a channelList
+        if self.channel > 100:
+            str = 'SENS:{}:AVER:WIND? (@{})'.format(functionCmdStr, self.channel)
+        elif self.channel != 1:
+            raise ValueError('queryAverageWindow(): "{}" is an invalid channel number.'.format(self.channel))
+        else:
+            str = 'SENS{}:{}:AVER:WIND?'.format(self.channel, functionCmdStr)
+            
+        #@@@#print('Average Window Query String: {}'.format(str))
+
+        window = self._instQuery(str)
+
+        sleep(wait)             # give some time for device to respond
+
+        return float(window)
+    
+    
     ## Although setMeasureVoltageRange()/setMeasureCurrentRange() can
     ## be inherited from SCPI.py, this method is here to support the
     ## other functions of the DMM9500 using the multiple function

@@ -184,7 +184,44 @@ if __name__ == '__main__':
 
     daq.autoZeroOnce()
 
+    #@@@#print(daq._instQuery("ROUT:DEL? (@slot1)"))
+    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+    daq.setChannelDelay(0.01)
+    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+    daq.setChannelDelay(0.1)
+    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+    daq.setChannelDelay(2)
+    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+    #@@@#print(daq._instQuery("ROUT:DEL? (@slot1)"))
+    daq.setChannelDelay(0.01)
+    print()
 
+    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+    daq.setChannelConnectRuleBBM()
+    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+    daq.setChannelConnectRuleMBB()
+    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+    daq.setChannelConnectRuleCONC()
+    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+    daq._setChannelConnectRule('bBm')
+    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+    print()
+    
+    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+    daq.setChannelLabel("Bob")
+    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+    daq.clearChannelLabel()
+    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+    daq.setChannelLabel("D_3V3")
+    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+    print()
+
+    #@@@@@ START HERE with Averagign Window function tests
+    
+    
+    
+    quit()
+    
     daq.setRelativeOffset()
     if canMeasCurr: daq.setRelativeOffset(0.0034567, function='CurrentDC')
 
