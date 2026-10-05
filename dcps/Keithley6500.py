@@ -1145,7 +1145,7 @@ class Keithley6500(SCPI):
 
         sleep(wait)             # give some time for device to respond
 
-        return float(count)
+        return int(count)
     
     def setAverageState(self, on, function=None, channel=None, wait=None):
         """Set the state (enable or disable) the averaging filter for measurements for the function
@@ -1837,7 +1837,8 @@ if __name__ == '__main__':
     dmm.setMeasureRange(4e-2,function='VoltageAC')
     dmm.setMeasureCurrentRange(5e-6)
     dmm.setMeasureRange(2,function='CurrentAC')
-    dmm.setMeasureRange(6e3,function='Resistance2W')
+    ## NOTE: After updating firmware, need to add wait=1.0 when setting range for Resistance2W
+    dmm.setMeasureRange(6e3,function='Resistance2W',wait=1.0)
     dmm.setMeasureRange(7e-4,function='Resistance4W')
     dmm.setMeasureRange(8e-9,function='Capacitance')
     dmm.setMeasureRange(9e-4,function='VoltageRatio')
@@ -1856,7 +1857,8 @@ if __name__ == '__main__':
     dmm.setMeasureRange('MIN',function='VoltageAC')
     dmm.setMeasureCurrentRange(None)
     dmm.setMeasureRange('DEF',function='CurrentAC')
-    dmm.setMeasureRange('MAX',function='Resistance2W')
+    ## NOTE: After updating firmware, need to add wait=1.0 when setting range for Resistance2W
+    dmm.setMeasureRange('MAX',function='Resistance2W',wait=1.0)
     dmm.setMeasureRange('MIN',function='Resistance4W')
     dmm.setMeasureRange(None,function='Capacitance')
     dmm.setMeasureRange('Def',function='VoltageRatio')

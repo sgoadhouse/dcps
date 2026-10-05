@@ -184,43 +184,58 @@ if __name__ == '__main__':
 
     daq.autoZeroOnce()
 
-    #@@@#print(daq._instQuery("ROUT:DEL? (@slot1)"))
-    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
-    daq.setChannelDelay(0.01)
-    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
-    daq.setChannelDelay(0.1)
-    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
-    daq.setChannelDelay(2)
-    print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
-    #@@@#print(daq._instQuery("ROUT:DEL? (@slot1)"))
-    daq.setChannelDelay(0.01)
-    print()
+    if True:
+        #@@@#print(daq._instQuery("ROUT:DEL? (@slot1)"))
+        print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+        daq.setChannelDelay(0.01)
+        print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+        daq.setChannelDelay(0.1)
+        print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+        daq.setChannelDelay(2)
+        print('(Channel Delay: {:1.3f})  {:9.7g} V \t'.format(daq.queryChannelDelay(), daq.measureVoltage(query_delay=.1)))
+        #@@@#print(daq._instQuery("ROUT:DEL? (@slot1)"))
+        daq.setChannelDelay(0.01)
+        print()
 
-    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
-    daq.setChannelConnectRuleBBM()
-    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
-    daq.setChannelConnectRuleMBB()
-    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
-    daq.setChannelConnectRuleCONC()
-    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
-    daq._setChannelConnectRule('bBm')
-    print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
-    print()
-    
-    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
-    daq.setChannelLabel("Bob")
-    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
-    daq.clearChannelLabel()
-    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
-    daq.setChannelLabel("D_3V3")
-    print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
-    print()
+    if True:
+        print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+        daq.setChannelConnectRuleBBM()
+        print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+        daq.setChannelConnectRuleMBB()
+        print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+        daq.setChannelConnectRuleCONC()
+        print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+        daq._setChannelConnectRule('bBm')
+        print('(Channel Connection Rule: {})  {:9.7g} V \t'.format(daq.queryChannelConnectRule(), daq.measureVoltage()))
+        print()
 
-    #@@@@@ START HERE with Averagign Window function tests
+    if True:
+        print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+        daq.setChannelLabel("Bob")
+        print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+        daq.clearChannelLabel()
+        print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+        daq.setChannelLabel("D_3V3")
+        print('(Channel Label: "{}")  {:9.7g} V \t'.format(daq.queryChannelLabel(), daq.measureVoltage()))
+        print()
+
     
-    
-    
-    quit()
+    if (True):
+        print('Avg Filt Count: {}  Avg Filt State: {}  Avg Filt Type: {}  Avg Filt Wind: {}  {:9.7g} V \t'.format(
+            daq.queryAverageCount(), daq.queryAverageState(), daq.queryAverageType(), daq.queryAverageWindow(), daq.measureVoltage()))
+        daq.setAverageCount(21)
+        print('Avg Filt Count: {}  Avg Filt State: {}  Avg Filt Type: {}  Avg Filt Wind: {}  {:9.7g} V \t'.format(
+            daq.queryAverageCount(), daq.queryAverageState(), daq.queryAverageType(), daq.queryAverageWindow(), daq.measureVoltage()))
+        daq.setAverageState(True)
+        print('Avg Filt Count: {}  Avg Filt State: {}  Avg Filt Type: {}  Avg Filt Wind: {}  {:9.7g} V \t'.format(
+            daq.queryAverageCount(), daq.queryAverageState(), daq.queryAverageType(), daq.queryAverageWindow(), daq.measureVoltage()))
+        #@@@#daq.setAverageTypeHYBR() - can only have MOV type if using a slot channel
+        #@@@#print('Avg Filt Count: {}  Avg Filt State: {}  Avg Filt Type: {}  Avg Filt Wind: {}  {:9.7g} V \t'.format(
+        #@@@#    daq.queryAverageCount(), daq.queryAverageState(), daq.queryAverageType(), daq.queryAverageWindow(), daq.measureVoltage()))    
+        daq.setAverageWindow(3.45)
+        print('Avg Filt Count: {}  Avg Filt State: {}  Avg Filt Type: {}  Avg Filt Wind: {}  {:9.7g} V \t'.format(
+            daq.queryAverageCount(), daq.queryAverageState(), daq.queryAverageType(), daq.queryAverageWindow(), daq.measureVoltage()))
+        print()
     
     daq.setRelativeOffset()
     if canMeasCurr: daq.setRelativeOffset(0.0034567, function='CurrentDC')
@@ -293,8 +308,8 @@ if __name__ == '__main__':
         print('{:6.4g} A'.format(daq.measureCurrent()))
         print('{:6.4g} A'.format(daq.measureCurrent()))
         print('{:6.4g} A'.format(daq.measureCurrent()))
-
     print('')
+
     print('ASCII SIG FIGs: {}'.format(daq.queryAsciiPrecision()))
     print('{:16.14g} V'.format(daq.measureVoltage()))
     print('Set Sig Figs to MAX:')
@@ -332,7 +347,8 @@ if __name__ == '__main__':
     daq.setMeasureRange(4e-2,function='VoltageAC')
     if canMeasCurr: daq.setMeasureCurrentRange(5e-6)
     if canMeasCurr: daq.setMeasureRange(2,function='CurrentAC')
-    daq.setMeasureRange(6e3,function='Resistance2W')
+    ## NOTE: After updating firmware, need to add wait=1.0 when setting range for Resistance2W
+    daq.setMeasureRange(6e3,function='Resistance2W',wait=1.0)
     daq.setMeasureRange(7e-4,function='Resistance4W')
     daq.setMeasureRange(8e-9,function='Capacitance')
     daq.setMeasureRange(9e-4,function='VoltageRatio')
@@ -351,7 +367,8 @@ if __name__ == '__main__':
     daq.setMeasureRange('MIN',function='VoltageAC')
     if canMeasCurr: daq.setMeasureCurrentRange(None)
     if canMeasCurr: daq.setMeasureRange('DEF',function='CurrentAC')
-    daq.setMeasureRange('MAX',function='Resistance2W')
+    ## NOTE: After updating firmware, need to add wait=1.0 when setting range for Resistance2W
+    daq.setMeasureRange('MAX',function='Resistance2W',wait=1.0)
     daq.setMeasureRange('MIN',function='Resistance4W')
     daq.setMeasureRange(None,function='Capacitance')
     daq.setMeasureRange('Def',function='VoltageRatio')
@@ -383,8 +400,8 @@ if __name__ == '__main__':
         print('Capacitance: {:6.4g} F'.format(daq.measureCapacitance()))
         print('Temperature: {:6.4g} C'.format(daq.measureTemperature()))
         print('Continuity:  {:6.4g} Ohm'.format(daq.measureContinuity()))
-        print('Frequency:   {:6.4g} Hz'.format(daq.measureFrequency(query_delay=3.0)))
-        print('Period:      {:6.4g} s'.format(daq.measurePeriod(query_delay=3.0)))
+        print('Frequency:   {:6.4g} Hz'.format(daq.measureFrequency(query_delay=4.0)))
+        print('Period:      {:6.4g} s'.format(daq.measurePeriod(query_delay=4.0)))
         print('Volt Ratio:  {:6.4g} V/V'.format(daq.measureVoltageRatio()))
 
     ## Do Not Need to do Both openChannels - just testing both of them
