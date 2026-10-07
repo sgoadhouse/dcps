@@ -629,7 +629,8 @@ class Keithley6500(SCPI):
         # will let the instrument decide if the label is a valid string
         if self.channel > 100:
             str = 'ROUT:LAB "{}", (@{})'.format(label,self.channel)
-            #@@@#print("   ROUT:LAB string: '{}'".format(str))
+            #@@@@@@#
+            print("   ROUT:LAB string: '{}'".format(str))
             self._instWrite(str)
             sleep(wait)             # give some time for device to respond
 
@@ -1025,7 +1026,8 @@ class Keithley6500(SCPI):
         else:
             str = 'SENS{}:{}:NPLC {}'.format(self.channel, functionCmdStr, nplc)
 
-        #@@@#print('Integration Time String: {}'.format(str))
+        #@@@@@@@#
+        print('Integration Time String: {}'.format(str))
 
         self._instWrite(str)
 
@@ -1513,6 +1515,20 @@ class Keithley6500(SCPI):
 
         return self.queryMeasureRange(function='CurrentDC', channel=channel)
 
+
+    def measureGenericFunction(self, function, channel=None, query_delay=None):
+        """Set measure function to function and return a measurement from channel
+        
+           function - a key from self._functions{} that selects the measurement function
+           channel  - number of the channel starting at 1
+        """
+
+        self.setMeasureFunction(function=function,channel=channel)
+        self.closeChannel()
+
+        val = self._instQuery('READ?',delay=query_delay)
+        return float(val)
+        
     
     def measureVoltage(self, channel=None, query_delay=None):
         """Read and return a DC Voltage measurement from channel
@@ -1520,25 +1536,23 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="VoltageDC",channel=channel)
-        self.closeChannel()
+        #self.setMeasureFunction(function="VoltageDC",channel=channel)
+        #self.closeChannel()
+        #
+        ##@@@#vals = self._instQuery('READ?').split(',')
+        #val = self._instQuery('READ?',delay=query_delay)        
+        ##@@@#print('Value: "{}" / {}'.format(val,float(val)))
+        #return float(val)
 
-        #@@@#vals = self._instQuery('READ?').split(',')
-        val = self._instQuery('READ?',delay=query_delay)        
-        #@@@#print('Value: "{}" / {}'.format(val,float(val)))
-        return float(val)
-        
+        return self.measureGenericFunction(function="VoltageDC", channel=channel, query_delay=query_delay)
+    
     def measureVoltageAC(self, channel=None, query_delay=None):
         """Read and return an AC Voltage measurement from channel
         
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="VoltageAC",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)
-        return float(val)
+        return self.measureGenericFunction(function="VoltageAC", channel=channel, query_delay=query_delay)
         
     def measureCurrent(self, channel=None, query_delay=None):
         """Read and return a DC Current measurement from channel
@@ -1546,11 +1560,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="CurrentDC",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="CurrentDC", channel=channel, query_delay=query_delay)
         
     def measureCurrentAC(self, channel=None, query_delay=None):
         """Read and return an AC Current measurement from channel
@@ -1558,11 +1568,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="CurrentAC",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="CurrentAC", channel=channel, query_delay=query_delay)
 
     def measureResistance(self, channel=None, query_delay=None):
         """Read and return a resistance measurement from channel
@@ -1570,11 +1576,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Resistance2W",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Resistance2W", channel=channel, query_delay=query_delay)
         
     def measureResistance4W(self, channel=None, query_delay=None):
         """Read and return a resistance measurement using 4-Wire from channel
@@ -1582,11 +1584,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Resistance4W",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Resistance4W", channel=channel, query_delay=query_delay)
         
     def measureDiode(self, channel=None, query_delay=None):
         """Read and return a diode measurement from channel
@@ -1594,11 +1592,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Diode",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Diode", channel=channel, query_delay=query_delay)
         
     def measureCapacitance(self, channel=None, query_delay=None):
         """Read and return a capacitance measurement from channel
@@ -1606,11 +1600,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Capacitance",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Capacitance", channel=channel, query_delay=query_delay)
 
     def measureTemperature(self, channel=None, query_delay=None):
         """Read and return a temperature measurement from channel
@@ -1618,11 +1608,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Temperature",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Temperature", channel=channel, query_delay=query_delay)
 
     def measureContinuity(self, channel=None, query_delay=None):
         """Read and return a continuity measurement from channel
@@ -1630,11 +1616,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Continuity",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Continuity", channel=channel, query_delay=query_delay)
 
     def measureFrequency(self, channel=None, query_delay=None):
         """Read and return a frequency measurement from channel
@@ -1642,11 +1624,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Frequency",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Frequency", channel=channel, query_delay=query_delay)
 
     def measurePeriod(self, channel=None, query_delay=None):
         """Read and return a period measurement from channel
@@ -1654,11 +1632,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="Period",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="Period", channel=channel, query_delay=query_delay)
 
     def measureVoltageRatio(self, channel=None, query_delay=None):
         """Read and return a voltage ratio measurement from channel
@@ -1666,11 +1640,7 @@ class Keithley6500(SCPI):
            channel - number of the channel starting at 1
         """
 
-        self.setMeasureFunction(function="VoltageRatio",channel=channel)
-        self.closeChannel()
-
-        val = self._instQuery('READ?',delay=query_delay)        
-        return float(val)
+        return self.measureGenericFunction(function="VoltageRatio", channel=channel, query_delay=query_delay)
 
 if __name__ == '__main__':
     import argparse
