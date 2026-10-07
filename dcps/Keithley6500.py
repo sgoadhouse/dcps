@@ -438,7 +438,7 @@ class Keithley6500(SCPI):
         self._instWrite(str)
 
 
-    def setChannelDelay(self, delay,channel=None, wait=None):
+    def setChannelDelay(self, delay, channel=None, wait=None):
         """Set a channel delay to wait after closing the channel for signal to settle before acquiring.
            This is only for channels that can be opened or closed like slot channels.
 
@@ -1526,7 +1526,9 @@ class Keithley6500(SCPI):
         self.setMeasureFunction(function=function,channel=channel)
         self.closeChannel()
 
+        ##@@@#vals = self._instQuery('READ?').split(',')
         val = self._instQuery('READ?',delay=query_delay)
+        #@@@#print('Measure "{}": "{}" / {}'.format(function,val,float(val)))
         return float(val)
         
     
@@ -1535,14 +1537,6 @@ class Keithley6500(SCPI):
         
            channel - number of the channel starting at 1
         """
-
-        #self.setMeasureFunction(function="VoltageDC",channel=channel)
-        #self.closeChannel()
-        #
-        ##@@@#vals = self._instQuery('READ?').split(',')
-        #val = self._instQuery('READ?',delay=query_delay)        
-        ##@@@#print('Value: "{}" / {}'.format(val,float(val)))
-        #return float(val)
 
         return self.measureGenericFunction(function="VoltageDC", channel=channel, query_delay=query_delay)
     
