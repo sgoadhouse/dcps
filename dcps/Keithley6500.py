@@ -629,8 +629,7 @@ class Keithley6500(SCPI):
         # will let the instrument decide if the label is a valid string
         if self.channel > 100:
             str = 'ROUT:LAB "{}", (@{})'.format(label,self.channel)
-            #@@@@@@#
-            print("   ROUT:LAB string: '{}'".format(str))
+            #@@@#print("   ROUT:LAB string: '{}'".format(str))
             self._instWrite(str)
             sleep(wait)             # give some time for device to respond
 
@@ -1026,8 +1025,7 @@ class Keithley6500(SCPI):
         else:
             str = 'SENS{}:{}:NPLC {}'.format(self.channel, functionCmdStr, nplc)
 
-        #@@@@@@@#
-        print('Integration Time String: {}'.format(str))
+        #@@@@#print('Integration Time String: {}'.format(str))
 
         self._instWrite(str)
 
