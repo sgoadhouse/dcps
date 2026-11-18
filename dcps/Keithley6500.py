@@ -75,6 +75,9 @@ class Keithley6500(SCPI):
                            }
         # default measurement function if not supplied as parameter into the method
         self._functionStr = None
+
+        # NaN for this instrument
+        self.NaN = +9.9E37
         
         super(Keithley6500, self).__init__(resource, max_chan=max_chan, wait=wait, cmd_prefix=':',
                                            verbosity = verbosity,
